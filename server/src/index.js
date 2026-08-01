@@ -25,7 +25,11 @@ app.use(
       if (!allowedOrigins) return callback(null, true);
       if (!origin) return callback(null, true); // curl, server-to-server
       if (allowedOrigins.includes(origin)) return callback(null, true);
-      return callback(new Error(`Origin ${origin} not allowed by CORS`));
+      // Deny by omitting the header, NOT by raising. Raising here turns a
+      // routine policy decision into a 500, which buries real faults in the
+      // logs and makes a blocked origin look like a broken server. The browser
+      // enforces the block on its own once the header is absent.
+      return callback(null, false);
     },
   })
 );
