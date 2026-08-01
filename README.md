@@ -42,37 +42,50 @@ npm run dev                   # API :3001 + web :5173
 Open http://localhost:5173 — the page reports whether the API and database are
 reachable.
 
-Once `DATABASE_URL` is set:
+**The schema applies itself on boot.** `db/schema.sql` is idempotent and runs
+on every start, so there's no migration step to forget. In production this
+happens over Render's internal network, which the Postgres IP allow-list does
+not gate — so no allow-list entry to maintain as your laptop's IP changes.
 
 ```bash
-npm run db:init      # apply db/schema.sql (idempotent)
 npm run db:verify    # prove the ledger refuses UPDATE and DELETE
 ```
 
-`db:verify` is your demo's best beat. Run it live.
+`db:verify` is your demo's best beat. Run it live. Running it **from your
+laptop** needs your IP in the Postgres allow-list (Render dashboard → the
+database → Access Control); the deployed service doesn't, because it connects
+internally.
 
 ## Deploying to Render
 
-1. Push to GitHub.
-2. Render dashboard → **New → Blueprint** → select the repo. `render.yaml`
-   provisions Postgres, the API, the static site, and the notarization cron.
-3. **Check whether the cron job deployed.** Cron Jobs have historically been a
-   paid Render feature, and the entire notarization layer depends on it. Find
-   out on day one — the fallback (notarize-on-write in the API) is a much
-   weaker independence story and you want time to adapt the pitch.
-4. Set the secrets Render won't sync from git:
-   - `paytrack-api` → `ANTHROPIC_API_KEY`, and `ALLOWED_ORIGINS` = the static
-     site URL
+1. **Authorize GitHub for this repo.** Render can't fetch a private repo
+   otherwise, and this is a browser flow with no API equivalent:
+   dashboard → **New → Web Service** → **Connect GitHub** → grant access.
+2. Dashboard → **New → Blueprint** → select the repo. `render.yaml` provisions
+   Postgres, the API, and the static site — all on free plans.
+3. Set the values Render won't sync from git:
+   - `paytrack-api` → `ANTHROPIC_API_KEY`, `ALLOWED_ORIGINS` = the static site URL
    - `paytrack-web` → `VITE_API_URL` = the API URL
-5. Run `npm run db:init` locally against the **External Database URL**.
 
-### Two things that will bite you on demo day
+### Notarization on the free tier
 
+Render Cron Jobs require a paid plan, so the blueprint ships with the cron
+commented out and the API falls back to **notarize-on-write**
+(`server/src/notarize.js`), throttled to one notarization per worker per hour.
+
+Be precise about the difference when you pitch it: the cron proves chain state
+at a fixed time regardless of worker activity; notarize-on-write only records
+state when the worker acts. Both timestamps are server-issued and neither is
+forgeable by the worker's device. The cron is strictly stronger, and
+uncommenting it in `render.yaml` is a one-line change once you're on a paid plan.
+
+### Three things that will bite you
+
+- **Free Postgres expires 30 days after creation.** Fine for a hackathon.
 - **Free web services spin down after ~15 min idle**, with a 30–60s cold start.
   Hit the URL right before you present.
-- **CORS** between the static site and API is already configured, but it only
-  works once `ALLOWED_ORIGINS` is actually set. Unset means "allow all", which
-  is fine in dev and wrong in production.
+- **CORS** is configured but only enforced once `ALLOWED_ORIGINS` is set. Unset
+  means "allow all" — fine in dev, wrong in production.
 
 ## Architecture
 
