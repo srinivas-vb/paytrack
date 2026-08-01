@@ -1,76 +1,169 @@
+/* ===========================================================================
+   PayTrack — ledger
+   ---------------------------------------------------------------------------
+   The material world of this product is the timecard: ruled paper, punch
+   columns, a grid of days against times. PayTrack exists because the
+   employer's grid was the only one that counted -- so the page draws the
+   worker's own, and it runs edge to edge behind everything.
+
+   Palette is paper greys with muted pastels. Nothing is alarm-red: the app
+   tells people they may be owed money and that retaliation is illegal, and
+   dressing either in danger colours would confirm the fear that stops workers
+   filing in the first place.
+
+   Numbers are monospace everywhere. Hours, money, hashes and dates are ledger
+   entries, and they should line up in a column like entries do.
+   =========================================================================== */
+
 :root {
-  --bg: #ffffff;
-  --fg: #16181d;
-  --dim: #6b7280;
-  --line: #e5e7eb;
-  --card: #f9fafb;
-  --good: #047857;
-  --good-bg: #ecfdf5;
-  --warn: #b45309;
-  --warn-bg: #fffbeb;
-  --bad: #b91c1c;
-  --bad-bg: #fef2f2;
-  --accent: #1d4ed8;
+  color-scheme: light dark;
+
+  --paper: #e9ecef; /* the page itself */
+  --bg: #eef1f4; /* header/nav wash */
+  --card: #fbfcfd; /* raised surfaces */
+  --fg: #14171a; /* soft black, never #000 */
+  --dim: #616872;
+  --line: #d6dbe0;
+  --rule: #dde2e8; /* the ambient timecard grid */
+
+  --accent: #6d8fad; /* dusty blue -- the primary action */
   --accent-fg: #ffffff;
-  --focus: #1d4ed8;
+  --focus: #4a7ea8;
+
+  --good: #4c7d63; /* sage */
+  --good-bg: #e6efe9;
+  --warn: #92653f; /* clay */
+  --warn-bg: #f6ece3;
+  --bad: #9c5a63; /* muted rose, deliberately not alarm red */
+  --bad-bg: #f6e9ea;
+
+  --shadow: #b9c2cc; /* the hard offset under raised things */
+  --edge: #9fa9b4; /* button borders -- a mid tone, never the text colour */
+  --lift: 3px;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #0f1115;
-    --fg: #e8eaed;
-    --dim: #9aa1ab;
-    --line: #262a33;
-    --card: #161920;
-    --good: #34d399;
-    --good-bg: #052e23;
-    --warn: #fbbf24;
-    --warn-bg: #2d2005;
-    --bad: #f87171;
-    --bad-bg: #2d0b0b;
-    --accent: #4f8ef7;
-    --accent-fg: #0b1220;
-    --focus: #7aa9ff;
+    --paper: #13161a;
+    --bg: #171b20;
+    --card: #1c2127;
+    --fg: #e4e8ec;
+    --dim: #97a0aa;
+    --line: #2b323a;
+    --rule: #1f252c;
+
+    --accent: #8bb0cd;
+    --accent-fg: #101820;
+    --focus: #a8c8e0;
+
+    --good: #8fbba1;
+    --good-bg: #17271e;
+    --warn: #cfa47c;
+    --warn-bg: #2a2018;
+    --bad: #c9909a;
+    --bad-bg: #2a1a1d;
+
+    --shadow: #0a0d11;
+    --edge: #3d4650;
   }
 }
 
 body {
   margin: 0;
-  background: var(--bg);
+  background: var(--paper);
   color: var(--fg);
   font: 16px/1.55 ui-sans-serif, system-ui, -apple-system, sans-serif;
 }
 
-code {
+/* The timecard. Fixed, full-bleed, behind everything -- columns wider than
+   rows, the proportions of a paper timesheet where days run across and hours
+   run down. This is the page's use of its own width: not decoration, the
+   thing the product is about. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  /* The centre fade is painted as an ordinary background layer sitting ON TOP
+     of the rules (first layer wins), not as a mask. A mask-image over a fixed
+     full-viewport element forces its own compositing pass every frame, which
+     was enough to lock up rendering on this page. Same look, ordinary paint. */
+  background-image:
+    radial-gradient(ellipse 58% 62% at 50% 38%, var(--paper) 0 42%, transparent 100%),
+    repeating-linear-gradient(to right, var(--rule) 0 1px, transparent 1px 104px),
+    repeating-linear-gradient(to bottom, var(--rule) 0 1px, transparent 1px 34px);
+}
+
+/* Numbers are ledger entries. Every figure in the app -- hours, money,
+   hashes, dates -- sets in mono with tabular figures so columns align. */
+code,
+.stopwatch,
+.finding-amount,
+.premium-amount,
+.shift-duration,
+.stub-figures,
+.status dd,
+.worker-id {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Sentences that happen to contain a figure stay in the body face -- setting a
+   whole sentence in mono makes it read as data rather than as a statement.
+   They keep tabular figures so the numbers still line up down the column. */
+.week-owed,
+.week-total,
+.finding-totals,
+.summary {
+  font-variant-numeric: tabular-nums;
+}
+
+code {
   font-size: 0.9em;
-  background: var(--card);
+  background: var(--bg);
   border: 1px solid var(--line);
   border-radius: 4px;
   padding: 1px 5px;
 }
 
 :focus-visible {
-  outline: 3px solid var(--focus);
+  outline: 2.5px solid var(--focus);
   outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
 }
 
 /* ---- shell -------------------------------------------------------- */
 
+/* Mobile keeps the stacked column. At 1000px the nav becomes a sticky rail
+   and the frame widens, so the layout uses the horizontal space structurally
+   rather than floating a narrow column in a void. */
+.app {
+  --frame: 1180px;
+  --rail: 208px;
+}
+
 .app-header {
   max-width: 640px;
   margin: 0 auto;
-  padding: 24px 16px 12px;
+  padding: 28px 16px 12px;
 }
 
 .app-header h1 {
   margin: 0;
-  font-size: 26px;
-  letter-spacing: -0.02em;
+  font-size: 27px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
 }
 
 .tagline {
-  margin: 4px 0 0;
+  margin: 5px 0 0;
   color: var(--dim);
   font-size: 14px;
 }
@@ -78,7 +171,7 @@ code {
 .shell {
   max-width: 640px;
   margin: 0 auto;
-  padding: 4px 16px 64px;
+  padding: 4px 16px 72px;
 }
 
 /* ---- tabs --------------------------------------------------------- */
@@ -92,6 +185,8 @@ code {
   max-width: 640px;
   margin: 0 auto;
   padding: 8px 12px;
+  /* Opaque, not a backdrop-filter: a blurred sticky bar repaints the whole
+     strip on every scroll frame, and this sits above a fixed background. */
   background: var(--bg);
   border-bottom: 1px solid var(--line);
 }
@@ -108,24 +203,31 @@ code {
   color: var(--dim);
   background: transparent;
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: 9px;
   cursor: pointer;
+  transition: color 0.14s, background 0.14s;
+}
+
+.tab:hover {
+  color: var(--fg);
 }
 
 .tab[aria-selected='true'] {
   color: var(--fg);
   background: var(--card);
   border-color: var(--line);
+  box-shadow: 0 1px 0 var(--shadow);
 }
 
 /* ---- cards -------------------------------------------------------- */
 
 .card {
-  margin-top: 16px;
-  padding: 18px 16px;
+  margin-top: 18px;
+  padding: 20px 18px;
   background: var(--card);
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: 14px;
+  box-shadow: 0 1px 0 var(--shadow);
 }
 
 .card h2 {
@@ -246,6 +348,11 @@ code {
 
 /* ---- buttons ------------------------------------------------------ */
 
+/* Buttons sit on the page rather than in it: a hard offset shadow with no
+   blur, so the edge stays crisp at any zoom. Pressing moves the button the
+   exact distance of its own shadow and removes it, so it lands flat on the
+   paper -- a stamp, not a glow. No gradients anywhere; the dimensionality is
+   entirely geometry. */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -256,21 +363,41 @@ code {
   font-size: 16px;
   font-weight: 600;
   color: var(--fg);
-  background: var(--bg);
-  border: 1px solid var(--line);
+  background: var(--card);
+  border: 1.5px solid var(--edge);
   border-radius: 10px;
   cursor: pointer;
+  box-shadow: var(--lift) var(--lift) 0 var(--shadow);
+  transition:
+    transform 0.09s ease-out,
+    box-shadow 0.09s ease-out,
+    background 0.14s;
+}
+
+.btn:hover:not(:disabled) {
+  background: var(--bg);
+}
+
+.btn:active:not(:disabled) {
+  transform: translate(var(--lift), var(--lift));
+  box-shadow: 0 0 0 var(--shadow);
 }
 
 .btn:disabled {
-  opacity: 0.55;
+  opacity: 0.45;
   cursor: default;
+  box-shadow: var(--lift) var(--lift) 0 var(--line);
+  border-color: var(--line);
 }
 
 .btn-primary {
   color: var(--accent-fg);
   background: var(--accent);
-  border-color: transparent;
+  border-color: color-mix(in srgb, var(--accent) 60%, var(--fg));
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 88%, var(--fg));
 }
 
 .btn-big {
@@ -295,17 +422,34 @@ code {
 .btn-danger {
   color: var(--bad);
   border-color: var(--bad);
+  box-shadow: var(--lift) var(--lift) 0 var(--bad);
 }
 
+.btn-danger:active:not(:disabled) {
+  box-shadow: 0 0 0 var(--bad);
+}
+
+/* A link is text, not a raised control -- it keeps no shadow, or the page
+   fills up with things all claiming the same weight. */
 .btn-link {
   padding: 0;
+  min-height: 0;
   font: inherit;
   font-weight: 600;
   color: var(--accent);
   background: none;
   border: 0;
+  box-shadow: none;
   text-decoration: underline;
+  text-underline-offset: 3px;
   cursor: pointer;
+}
+
+.btn-link:hover:not(:disabled),
+.btn-link:active:not(:disabled) {
+  background: none;
+  transform: none;
+  box-shadow: none;
 }
 
 .button-row {
@@ -1025,5 +1169,67 @@ footer {
   .card {
     margin-top: 20px;
     padding: 20px;
+  }
+}
+
+/* ---- desktop: nav becomes a rail --------------------------------- */
+/* Last in the file on purpose: it has to win over the 600px block above,
+   which matches too at these widths and would otherwise re-apply the
+   narrow-column padding. */
+@media (min-width: 1000px) {
+  .app {
+    display: grid;
+    grid-template-columns: var(--rail) minmax(0, 1fr);
+    grid-template-areas:
+      'head head'
+      'nav  main';
+    column-gap: 40px;
+    max-width: var(--frame);
+    margin: 0 auto;
+    padding: 0 32px;
+  }
+
+  .app-header {
+    grid-area: head;
+    max-width: none;
+    /* auto margins on a grid item override stretch and centre a
+       shrink-to-fit box -- must be reset or the header floats. */
+    margin: 0;
+    padding: 44px 0 20px;
+  }
+
+  .app-header h1 {
+    font-size: 34px;
+  }
+
+  .tabs {
+    grid-area: nav;
+    position: sticky;
+    top: 32px;
+    align-self: start;
+    flex-direction: column;
+    gap: 2px;
+    max-width: none;
+    margin: 0;
+    padding: 8px;
+    background: transparent;
+    backdrop-filter: none;
+    border-bottom: 0;
+    border-right: 1px solid var(--line);
+  }
+
+  .tab {
+    flex: none;
+    justify-content: flex-start;
+    text-align: left;
+    padding: 0 14px;
+    font-size: 15px;
+  }
+
+  .shell {
+    grid-area: main;
+    max-width: 720px;
+    margin: 0;
+    padding: 0 0 96px;
   }
 }
