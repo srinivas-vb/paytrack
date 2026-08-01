@@ -1,29 +1,35 @@
 /* ===========================================================================
    PayTrack — blush ledger
    ---------------------------------------------------------------------------
-   Palette and chrome follow moe-capital.com: a blush off-white canvas
-   (#F8F2F5), pure black type, 4px radii, and almost no borders -- that page
-   carries ZERO on any element and separates by whitespace and surface value
-   alone. Cards here do the same; hairlines survive only inside data tables,
-   where columns genuinely need them and a marketing page has none.
+   Light only. The reference this follows (moe-capital.com) has no dark mode
+   either, and committing to one scheme means one set of decisions to get right
+   rather than two half-tuned ones.
 
-   Its display face is a pixel typeface at 46px/400 -- large but LIGHT, never
-   bold. That is a webfont this project cannot load, so the display sets in
-   mono at weight 400 instead: the nearest honest system equivalent, and
-   already true to what this app is. Every figure is mono with tabular
-   figures, because a timecard is a ledger and entries should line up.
+   From that reference: a blush off-white canvas (#F8F2F5), pure black type,
+   4px radii, and no uppercase anywhere -- labels set lower-case in mono
+   instead of shouting. Its display face is a pixel typeface at 46px/400,
+   large but LIGHT; that is a webfont this project cannot load, so the display
+   sets in mono at weight 400, which is also already what this app's data is.
+   Every figure is mono with tabular figures, because a timecard is a ledger.
 
-   Two deliberate departures. The reference uses acid green and electric
-   violet as loud accents; this app tells people they may be owed money and
-   that retaliation is illegal, so the violet is pulled a notch off electric
-   and the alarm colours are dropped entirely -- dressing protective content
-   as danger confirms the fear that stops workers filing. And the ruled grid
-   behind everything stays: this product exists because the employer's
-   timecard was the only grid that counted, so the page draws the worker's own.
+   DEPTH IS A HIERARCHY, not a texture. Three steps, and each one means
+   something:
+     controls   2px offset, and they press into it -- a stamp
+     surfaces   4px, the sheet a control is printed on
+     the figure 6px, the one number the worker came for
+   Possible break premiums are deliberately FLAT and dashed: they are not money
+   owed, and giving them the same physical presence as the real figures would
+   let them read as part of the claim.
+
+   One departure from the reference: its accents are acid green and electric
+   violet. The violet is pulled a notch off electric so it holds contrast on
+   white, and the alarm colours are gone -- this app tells people they may be
+   owed money and that retaliation is illegal, and dressing that as danger
+   confirms the fear that stops people filing.
    =========================================================================== */
 
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
 
   --paper: #f8f2f5; /* blush off-white -- the canvas */
   --bg: #f2eaee; /* nav wash, a half-step down */
@@ -31,7 +37,6 @@
   --fg: #000000; /* pure black. Headings commit. */
   --dim: rgba(0, 0, 0, 0.46);
   --line: rgba(0, 0, 0, 0.09); /* hairlines, only where data needs them */
-  --rule: rgba(0, 0, 0, 0.045); /* the ambient timecard grid */
 
   --accent: #6b46e0; /* violet, one notch off electric so it can sit on white */
   --accent-fg: #ffffff;
@@ -44,65 +49,21 @@
   --bad: #8f4450;
   --bad-bg: #f9edef;
 
-  --shadow: rgba(0, 0, 0, 0.14);
-  --edge: rgba(0, 0, 0, 0.16);
-  --lift: 2px;
+  --shadow: rgba(0, 0, 0, 0.16); /* under controls */
+  --edge: rgba(0, 0, 0, 0.18);
+  --shadow-card: rgba(0, 0, 0, 0.07); /* under surfaces -- lighter, deeper */
+  --edge-soft: rgba(0, 0, 0, 0.07);
+  --lift: 2px; /* controls */
+  --lift-card: 4px; /* surfaces */
   --r: 4px; /* radii are small and consistent -- nothing is a pill */
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    /* The blush carried through: the dark canvas keeps the same rose cast
-       rather than going neutral grey, so both schemes are the same product. */
-    --paper: #14100f;
-    --bg: #1a1514;
-    --card: #201a19;
-    --fg: #faf6f7;
-    --dim: rgba(250, 246, 247, 0.5);
-    --line: rgba(250, 246, 247, 0.12);
-    --rule: rgba(250, 246, 247, 0.05);
-
-    --accent: #a78bfa;
-    --accent-fg: #17111f;
-    --focus: #a78bfa;
-
-    --good: #7fc0a0;
-    --good-bg: #16231d;
-    --warn: #d3a473;
-    --warn-bg: #241c14;
-    --bad: #cf8f9c;
-    --bad-bg: #241619;
-
-    --shadow: rgba(0, 0, 0, 0.6);
-    --edge: rgba(250, 246, 247, 0.2);
-  }
-}
 
 body {
   margin: 0;
   background: var(--paper);
   color: var(--fg);
   font: 16px/1.55 ui-sans-serif, system-ui, -apple-system, sans-serif;
-}
-
-/* The timecard. Fixed, full-bleed, behind everything -- columns wider than
-   rows, the proportions of a paper timesheet where days run across and hours
-   run down. This is the page's use of its own width: not decoration, the
-   thing the product is about. */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  /* The centre fade is painted as an ordinary background layer sitting ON TOP
-     of the rules (first layer wins), not as a mask. A mask-image over a fixed
-     full-viewport element forces its own compositing pass every frame, which
-     was enough to lock up rendering on this page. Same look, ordinary paint. */
-  background-image:
-    radial-gradient(ellipse 58% 62% at 50% 38%, var(--paper) 0 42%, transparent 100%),
-    repeating-linear-gradient(to right, var(--rule) 0 1px, transparent 1px 104px),
-    repeating-linear-gradient(to bottom, var(--rule) 0 1px, transparent 1px 34px);
 }
 
 /* Numbers are ledger entries. Every figure in the app -- hours, money,
@@ -236,16 +197,17 @@ code {
 
 /* ---- cards -------------------------------------------------------- */
 
-/* The reference page has ZERO borders on any element -- separation is
-   whitespace and surface value alone. Cards follow that: white on blush,
-   generous padding, no outline and no shadow. Hairlines survive only inside
-   data tables further down, where columns genuinely need them. */
+/* Surfaces sit ON the page, the same way the buttons do: a hairline edge and
+   a hard offset with no blur. Same geometry as .btn, one step deeper -- so a
+   card reads as the sheet a control is printed on, and the hierarchy is
+   consistent rather than each element inventing its own depth. */
 .card {
   margin-top: 22px;
   padding: 26px 24px;
   background: var(--card);
-  border: 0;
+  border: 1px solid var(--edge-soft);
   border-radius: var(--r);
+  box-shadow: var(--lift-card) var(--lift-card) 0 var(--shadow-card);
 }
 
 .card h2 {
@@ -868,9 +830,10 @@ code {
   display: flex;
   gap: 4px;
   padding: 4px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--edge);
   border-radius: var(--r);
-  background: var(--bg);
+  background: var(--card);
+  box-shadow: var(--lift) var(--lift) 0 var(--shadow);
 }
 
 .segment {
@@ -898,12 +861,16 @@ code {
    $0 owed is a correct, ordinary answer and gets exactly the presentation a
    positive figure gets -- no red, no green, no "empty state". An app that only
    ever looks like it found something is an accusation generator. */
+/* The one number the worker came for. Deepest lift on the page, and the only
+   surface that sits on white rather than the wash -- it should read as a slip
+   laid on top of the sheet, not another panel in the stack. */
 .finding {
-  margin-top: 16px;
-  padding: 18px 16px;
-  background: var(--bg);
-  border: 1px solid var(--line);
+  margin-top: 18px;
+  padding: 22px 20px;
+  background: var(--card);
+  border: 1px solid var(--edge);
   border-radius: var(--r);
+  box-shadow: 6px 6px 0 var(--shadow-card);
 }
 
 .finding-label {
@@ -911,7 +878,9 @@ code {
   font-size: 13px;
   font-weight: 600;
   letter-spacing: 0.04em;
-  text-transform: uppercase;
+  text-transform: none;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-weight: 400;
   color: var(--dim);
 }
 
@@ -968,11 +937,12 @@ code {
 }
 
 .week {
-  margin-top: 12px;
-  padding: 14px;
-  background: var(--bg);
-  border: 1px solid var(--line);
+  margin-top: 14px;
+  padding: 16px;
+  background: var(--card);
+  border: 1px solid var(--edge-soft);
   border-radius: var(--r);
+  box-shadow: 2px 2px 0 var(--shadow-card);
 }
 
 .week-head {
@@ -1058,10 +1028,13 @@ code {
 /* Everything the headline figure deliberately EXCLUDES lives in one of these.
    The dashed edge is the point: it reads as attached-but-separate, so a
    possible break premium can never be mistaken for money owed. */
+/* Deliberately flat and dashed. These are flags, not money owed -- giving
+   them the same lift as the real figures would let them read as part of the
+   claim, which is the one thing this block must never do. */
 .aside {
-  margin-top: 24px;
-  padding: 16px;
-  border: 1px dashed var(--dim);
+  margin-top: 26px;
+  padding: 18px;
+  border: 1px dashed var(--edge);
   border-radius: var(--r);
 }
 
