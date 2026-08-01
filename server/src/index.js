@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors';
 
 import { dbHealthy } from './db.js';
+import { migrate } from './migrate.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -74,6 +75,10 @@ app.use((err, _req, res, _next) => {
   console.error('[api]', err);
   res.status(500).json({ error: err.message || 'internal error' });
 });
+
+// Apply the schema before accepting traffic. Runs over Render's internal
+// network in production, so the Postgres IP allow-list never comes into it.
+await migrate();
 
 app.listen(PORT, () => {
   console.log(`[api] listening on :${PORT}`);
