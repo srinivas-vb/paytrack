@@ -11,6 +11,17 @@ PayTrack gives workers an independent one. Log your own hours, photograph your
 paystub, and see — in dollars — the gap between what you worked and what you
 were paid.
 
+## Live
+
+| | |
+|---|---|
+| App | https://paytrack-web.onrender.com |
+| API | https://paytrack-api-eoya.onrender.com |
+| Health | https://paytrack-api-eoya.onrender.com/api/health |
+
+Note the `-eoya` suffix on the API — `paytrack-api` was already taken on
+Render, so the generated URL differs from the service name.
+
 ## Why this works legally
 
 Under **_Anderson v. Mt. Clemens Pottery Co._, 328 U.S. 680 (1946)**, when an
