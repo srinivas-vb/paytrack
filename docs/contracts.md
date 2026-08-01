@@ -158,3 +158,142 @@ Walks the worker's whole chain via `verifyChain()`.
    in one transaction, or two quick taps produce two entries claiming the same
    `prevHash` and the verifier will report a fork.
 5. **Use `lib/hash.js` and `lib/geo.js`.** Do not reimplement either.
+
+---
+
+# Phase 2 API contract — rule engine
+
+Legal rules live in `docs/wage-rules.md`. Hand-computed expected values live in
+`server/src/rules/fixtures.js`. **Both are authoritative over any code.**
+
+## Internal shapes (module boundaries)
+
+### `Workday`
+Produced by the bucketer, consumed by the jurisdiction rules.
+
+```jsonc
+{
+  "date": "2026-07-06",        // local calendar date, YYYY-MM-DD
+  "hours": 9,                   // total hours in this workday
+  "shiftIds": [12, 13]          // hours_log ids contributing to it
+}
+```
+
+### `Workweek`
+
+```jsonc
+{
+  "start": "2026-07-05T00:00:00.000Z",
+  "end":   "2026-07-12T00:00:00.000Z",   // exclusive
+  "workdays": [ /* Workday */ ],
+  "totalHours": 45,
+  "consecutiveDaysWorked": 5              // for the CA 7th-day rule
+}
+```
+
+### `HourBreakdown`
+What every jurisdiction module returns for one workweek. **Every hour lands in
+exactly one bucket** — the three must sum to `totalHours`.
+
+```jsonc
+{
+  "straightHours": 40,
+  "overtimeHours": 5,       // 1.5x
+  "doubleTimeHours": 0,     // 2.0x
+  "reasons": [              // human-readable, shown in the PDF and the UI
+    { "hours": 5, "multiplier": 1.5, "basis": "daily overtime (over 8 in a workday)", "statute": "Cal. Lab. Code § 510" }
+  ]
+}
+```
+
+### `PotentialPremium`
+Meal/rest flags. **Never included in `owed`** — see `docs/wage-rules.md` §4.
+
+```jsonc
+{
+  "type": "meal",
+  "statute": "Cal. Lab. Code § 226.7",
+  "workday": "2026-07-06",
+  "amount": 20,
+  "explanation": "A 6-hour shift with no recorded break. PayTrack cannot see whether a break was taken."
+}
+```
+
+## Module interfaces
+
+```js
+// rules/workweek.js
+bucketShifts(shifts, { workweekStartsOn = 0, timezone = 'UTC' }) -> Workweek[]
+
+// rules/federal.js  and  rules/california.js  — identical signature
+computeHours(workweek) -> HourBreakdown
+findPotentialPremiums(workweek, hourlyRate) -> PotentialPremium[]   // federal returns []
+```
+
+Both jurisdiction modules take a single `Workweek` and are **pure** — no DB, no
+clock, no I/O. That is what makes them testable against fixtures.
+
+## Endpoints
+
+### `POST /api/paystubs`
+Manual entry. Vision extraction (Phase 3) populates the same shape.
+
+```jsonc
+{
+  "periodStart": "2026-07-05",
+  "periodEnd": "2026-07-18",
+  "paidHours": 78,
+  "paidRate": 20,
+  "grossPay": 1600,
+  "presentFields": ["gross_wages", "total_hours", "net_wages", "pay_period_dates"]
+}
+```
+`presentFields` drives the § 226(a) compliance check — the nine required elements
+are listed in `docs/wage-rules.md` §5. Absent ⇒ flagged, with the caveat that
+absence from the *form* is not proof of absence from the *original statement*.
+
+→ `201 { "paystub": Paystub }` · `400 { "error": string }`
+
+### `GET /api/paystubs` → `200 { "paystubs": Paystub[] }`
+### `DELETE /api/paystubs/:id` → `204`
+
+### `GET /api/analysis?paystubId=<id>&jurisdiction=<federal|california>`
+The headline endpoint.
+
+```jsonc
+{
+  "jurisdiction": "california",
+  "hourlyRate": 20,
+  "workweeks": [
+    {
+      "start": "2026-07-05T00:00:00.000Z",
+      "end": "2026-07-12T00:00:00.000Z",
+      "totalHours": 45,
+      "breakdown": { /* HourBreakdown */ },
+      "owed": 950
+    }
+  ],
+  "totalOwed": 1650,
+  "totalPaid": 1600,
+  "discrepancy": 50,               // owed − paid; zero or negative is a valid result
+  "potentialPremiums": [ /* PotentialPremium */ ],
+  "complianceFlags": [
+    { "element": "employer_address", "statute": "Cal. Lab. Code § 226(a)(9)" }
+  ],
+  "scopeExclusions": ["tips", "commissions", "nondiscretionary bonuses"]
+}
+```
+
+## Rules every implementer must honour
+
+1. **Bucket into workweeks first, then compute.** Never compute on a pay-period
+   total — see fixture `federal-biweekly-45-35`.
+2. **Never pyramid overtime.** An hour is promoted once. Hours already at 1.5×
+   are excluded from the weekly straight-time total — see fixture
+   `ca-nine-hour-days`.
+3. **`straightHours + overtimeHours + doubleTimeHours === totalHours`**, always.
+4. **Potential premiums stay out of `owed`.**
+5. **Zero and negative discrepancies are correct results** and must render as
+   plainly as positive ones.
+6. **Money is computed in cents** internally and rounded once at the boundary.
+   Never accumulate floats across a loop.
