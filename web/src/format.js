@@ -145,6 +145,23 @@ export function formatCalendarDate(value) {
  *     the device's; when those differ, `end − 1ms` can fall on the far side of
  *     local midnight and print an eight-day week. This cannot.
  */
+/**
+ * Labels a workweek using the SAME calendar the rule engine bucketed it on.
+ *
+ * The engine buckets at 00:00 UTC (see rules/workweek.js). Rendering those
+ * boundary instants in the viewer's local zone shifts them: west of UTC, a
+ * workweek beginning Sunday 00:00 UTC is Saturday 17:00 local, so the label
+ * read "Sat, Jul 4 – Fri, Jul 10" for a week that starts on a Sunday and
+ * contains no Saturday shift. The dates were off by one and the weekday name
+ * contradicted the rule being applied.
+ *
+ * So the boundaries are formatted in UTC. The end instant is EXCLUSIVE, so the
+ * last day shown is the span minus one -- otherwise a 7-day week prints an
+ * 8-day range.
+ *
+ * report.js does the same thing for the same reason; the two must agree,
+ * because a worker comparing the screen to the PDF is checking exactly this.
+ */
 export function formatWeekRange(startIso, endIso) {
   const start = toDate(startIso)
   if (!start) return '—'
@@ -154,12 +171,18 @@ export function formatWeekRange(startIso, endIso) {
     ? Math.max(1, Math.round((end.getTime() - start.getTime()) / 86_400_000))
     : 7
 
-  const last = new Date(
-    start.getFullYear(),
-    start.getMonth(),
-    start.getDate() + spanDays - 1,
-  )
-  return `${formatDayLabel(start.toISOString())} – ${formatDayLabel(last.toISOString())}`
+  const last = new Date(start.getTime() + (spanDays - 1) * 86_400_000)
+  return `${formatUtcDayLabel(start)} – ${formatUtcDayLabel(last)}`
+}
+
+/** A day label rendered on the UTC calendar, not the viewer's. */
+function formatUtcDayLabel(d) {
+  return d.toLocaleDateString([], {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    timeZone: 'UTC',
+  })
 }
 
 /** yyyy-mm-dd in LOCAL time, for <input type="date"> defaults. */

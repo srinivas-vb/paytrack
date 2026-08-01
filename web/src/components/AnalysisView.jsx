@@ -285,6 +285,45 @@ function Workweek({ week }) {
  * a worker walks into a labor commissioner's office with, and an inflated
  * number makes a worse case than a conservative one.
  */
+const PREMIUM_LABEL = {
+  meal: 'Possible missed meal break',
+  rest: 'Possible missed rest break',
+}
+
+/**
+ * Collapses premiums that say the same thing into one entry listing its days.
+ *
+ * Grouping is on type + explanation + statute, so a day that carries a
+ * DIFFERENT note -- a shift over 10 hours owes a second meal period, for
+ * instance -- stays its own entry rather than being folded into the general
+ * case and losing the distinction.
+ */
+function groupPremiums(premiums) {
+  const groups = new Map()
+
+  for (const p of premiums) {
+    const explanation = p.explanation ?? ''
+    const statute = p.statute ?? ''
+    const type = p.type ?? 'other'
+    const key = `${type}|${statute}|${explanation}`
+
+    if (!groups.has(key)) {
+      groups.set(key, {
+        key,
+        label: PREMIUM_LABEL[type] ?? 'Possible missed break',
+        explanation,
+        statute,
+        eachAmount: Number(p.amount) || 0,
+        days: [],
+      })
+    }
+    if (p.workday) groups.get(key).days.push(p.workday)
+  }
+
+  for (const g of groups.values()) g.days.sort()
+  return [...groups.values()]
+}
+
 function PotentialPremiums({ premiums }) {
   return (
     <section className="aside">
@@ -302,27 +341,27 @@ function PotentialPremiums({ premiums }) {
           problem.
         </p>
       ) : (
+        // Grouped by explanation. Ten identical four-line paragraphs is not ten
+        // times the information -- it is one fact repeated until the worker
+        // stops reading and scrolls past the evidence packet and the filing
+        // steps below, which are the parts they have to act on. Same content,
+        // stated once, with the days it applies to listed under it.
         <ul className="premium-list">
-          {premiums.map((premium, i) => (
-            <li key={`${premium.workday ?? 'day'}-${premium.type ?? i}`}>
+          {groupPremiums(premiums).map((group) => (
+            <li key={group.key}>
               <div className="premium-head">
-                <span className="premium-type">
-                  {premium.type === 'meal'
-                    ? 'Possible missed meal break'
-                    : premium.type === 'rest'
-                      ? 'Possible missed rest break'
-                      : 'Possible missed break'}
-                </span>
+                <span className="premium-type">{group.label}</span>
                 <span className="premium-amount">
-                  {formatMoney(Number(premium.amount))} if it applies
+                  {formatMoney(group.eachAmount)} each, if it applies
                 </span>
               </div>
-              {premium.workday ? (
-                <p className="premium-day">{premium.workday}</p>
-              ) : null}
-              {premium.explanation ? <p>{premium.explanation}</p> : null}
-              {premium.statute ? (
-                <p className="reason-statute">{premium.statute}</p>
+              <p className="premium-day">
+                {group.days.length} workday{group.days.length === 1 ? '' : 's'}:{' '}
+                {group.days.join(', ')}
+              </p>
+              {group.explanation ? <p>{group.explanation}</p> : null}
+              {group.statute ? (
+                <p className="reason-statute">{group.statute}</p>
               ) : null}
             </li>
           ))}
