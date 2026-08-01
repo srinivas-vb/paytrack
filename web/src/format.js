@@ -84,6 +84,84 @@ export function formatGap(fromIso, toIso) {
   return `${Math.floor(ms / 60_000)} minutes later`
 }
 
+/**
+ * "$1,600.00" — money, always to the cent.
+ *
+ * Negative amounts get a real minus sign in front of the currency symbol
+ * ("−$50.00") rather than the locale's parenthesised accounting form, because a
+ * negative discrepancy is an ordinary, correct answer here and must read as a
+ * plain number, not as an error state.
+ */
+export function formatMoney(value) {
+  if (!Number.isFinite(value)) return '—'
+  const abs = Math.abs(value).toLocaleString([], {
+    style: 'currency',
+    currency: 'USD',
+  })
+  return value < 0 ? `−${abs}` : abs
+}
+
+/** "45h" / "8.5h" — hours as a worker would say them, never "8.50". */
+export function formatHours(value) {
+  if (!Number.isFinite(value)) return '—'
+  return `${Number(value.toFixed(2))}h`
+}
+
+/** "1.5×" — the multiplier, without trailing zeros. */
+export function formatMultiplier(value) {
+  if (!Number.isFinite(value)) return '—'
+  return `${Number(value.toFixed(2))}×`
+}
+
+/**
+ * Formats a bare `YYYY-MM-DD` calendar date.
+ *
+ * Deliberately NOT `new Date('2026-07-05')` — the spec says a date-only string
+ * is parsed as UTC midnight, so rendering it in any zone west of UTC prints the
+ * PREVIOUS day. A pay period that displays as starting a day earlier than the
+ * worker typed would quietly undermine the one document they're checking
+ * against.
+ */
+export function formatCalendarDate(value) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value || '')
+  if (!m) return '—'
+  const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]))
+  return invalid(d)
+    ? '—'
+    : d.toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' })
+}
+
+/**
+ * A workweek's human label — "Sun, 5 Jul – Sat, 11 Jul".
+ *
+ * `end` is EXCLUSIVE in the contract, so naming it directly would print a day
+ * outside the week. The last day is therefore derived from `start` plus the
+ * span in whole days, rather than from `end` minus an instant. Two reasons:
+ *
+ *   - Adding CALENDAR days is DST-safe. Adding 6×86,400,000 ms across a spring
+ *     transition lands at 01:00 the following day.
+ *   - Both ends of the label then come from the same anchor. The workweek
+ *     boundaries are computed in the worker's configured zone but rendered in
+ *     the device's; when those differ, `end − 1ms` can fall on the far side of
+ *     local midnight and print an eight-day week. This cannot.
+ */
+export function formatWeekRange(startIso, endIso) {
+  const start = toDate(startIso)
+  if (!start) return '—'
+
+  const end = toDate(endIso)
+  const spanDays = end
+    ? Math.max(1, Math.round((end.getTime() - start.getTime()) / 86_400_000))
+    : 7
+
+  const last = new Date(
+    start.getFullYear(),
+    start.getMonth(),
+    start.getDate() + spanDays - 1,
+  )
+  return `${formatDayLabel(start.toISOString())} – ${formatDayLabel(last.toISOString())}`
+}
+
 /** yyyy-mm-dd in LOCAL time, for <input type="date"> defaults. */
 export function toDateInputValue(date = new Date()) {
   const pad = (n) => String(n).padStart(2, '0')

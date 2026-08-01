@@ -6,6 +6,8 @@ import { dbHealthy } from './db.js';
 import { migrate } from './migrate.js';
 import shiftsRouter from './routes/shifts.js';
 import workplacesRouter from './routes/workplaces.js';
+import paystubsRouter from './routes/paystubs.js';
+import analysisRouter from './routes/analysis.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -71,12 +73,12 @@ app.get('/', (_req, res) => {
 // regardless of where it is mounted.
 //
 // Phase 3+ will add:
-//   /api/paystubs    vision extraction
-//   /api/analysis    rule engine output
 //   /api/explain     LLM legal explainer
 // ---------------------------------------------------------------------------
 app.use('/api/shifts', shiftsRouter);
 app.use('/api/workplaces', workplacesRouter);
+app.use('/api/paystubs', paystubsRouter);
+app.use('/api/analysis', analysisRouter);
 
 app.use((_req, res) => res.status(404).json({ error: 'not found' }));
 

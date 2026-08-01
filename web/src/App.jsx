@@ -7,10 +7,12 @@ import ClockPanel from './components/ClockPanel.jsx'
 import HistoryPanel from './components/HistoryPanel.jsx'
 import WorkplacesPanel from './components/WorkplacesPanel.jsx'
 import IntegrityPanel from './components/IntegrityPanel.jsx'
+import PayPanel from './components/PayPanel.jsx'
 
 const TABS = [
   { id: 'clock', label: 'Clock' },
   { id: 'history', label: 'History' },
+  { id: 'pay', label: 'Pay' },
   { id: 'places', label: 'Places' },
   { id: 'record', label: 'Record' },
 ]
@@ -20,6 +22,7 @@ const TABS = [
 const loadShifts = () => api.listShifts(100)
 const loadWorkplaces = () => api.listWorkplaces()
 const loadVerification = () => api.verifyChain()
+const loadPaystubs = () => api.listPaystubs()
 
 export default function App() {
   const [tab, setTab] = useState('clock')
@@ -30,10 +33,12 @@ export default function App() {
   const shifts = useResource(loadShifts)
   const workplaces = useResource(loadWorkplaces)
   const verification = useResource(loadVerification)
+  const paystubs = useResource(loadPaystubs)
 
   const reloadShifts = shifts.reload
   const reloadVerification = verification.reload
   const reloadWorkplaces = workplaces.reload
+  const reloadPaystubs = paystubs.reload
 
   // Anything that appends to the ledger changes both the shift list and the
   // chain, so they refresh together.
@@ -97,6 +102,16 @@ export default function App() {
             onChanged={refreshLedger}
             retroOpen={retroOpen}
             setRetroOpen={setRetroOpen}
+          />
+        ) : null}
+
+        {tab === 'pay' ? (
+          <PayPanel
+            status={paystubs.status}
+            error={paystubs.error}
+            paystubs={paystubs.data ?? []}
+            onRetry={reloadPaystubs}
+            onChanged={reloadPaystubs}
           />
         ) : null}
 

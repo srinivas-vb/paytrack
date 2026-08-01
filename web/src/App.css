@@ -96,12 +96,14 @@ code {
   border-bottom: 1px solid var(--line);
 }
 
+/* Five tabs have to fit a 360px screen without shrinking the 48px tap target,
+   so the label gets smaller rather than the button. Restored at 600px. */
 .tab {
   flex: 1 1 0;
   min-height: 48px;
-  padding: 0 4px;
+  padding: 0 2px;
   font: inherit;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--dim);
   background: transparent;
@@ -620,6 +622,366 @@ code {
   font-size: 13px;
 }
 
+/* ---- paystubs ----------------------------------------------------- */
+
+.stub-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.stub {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 8px 0;
+  border-top: 1px solid var(--line);
+}
+
+/* The chosen stub drives the whole analysis below, so it is marked with a
+   solid rule as well as a tint -- colour alone is not a signal. */
+.stub-selected {
+  border-left: 3px solid var(--accent);
+  padding-left: 12px;
+}
+
+.stub-choose {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1 1 200px;
+  min-width: 0;
+  min-height: 48px;
+  cursor: pointer;
+}
+
+.stub-choose input {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  accent-color: var(--accent);
+}
+
+.stub-main {
+  min-width: 0;
+}
+
+.stub-period {
+  display: block;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.stub-figures {
+  display: block;
+  font-size: 14px;
+  color: var(--dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.checklist {
+  margin: 8px 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.checklist legend {
+  padding: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--dim);
+}
+
+.checklist .toggle {
+  margin-top: 8px;
+}
+
+/* ---- jurisdiction toggle ------------------------------------------ */
+
+.segmented {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--bg);
+}
+
+.segment {
+  flex: 1 1 0;
+  min-height: 48px;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--dim);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.segment[aria-pressed='true'] {
+  color: var(--accent-fg);
+  background: var(--accent);
+  border-color: transparent;
+}
+
+/* ---- the headline figure ------------------------------------------ */
+
+/* One block, one size, one colour, whatever the sign.
+   $0 owed is a correct, ordinary answer and gets exactly the presentation a
+   positive figure gets -- no red, no green, no "empty state". An app that only
+   ever looks like it found something is an accusation generator. */
+.finding {
+  margin-top: 16px;
+  padding: 18px 16px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.finding-label {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+.finding-amount {
+  margin: 6px 0 0;
+  font-size: 38px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.finding-sentence {
+  margin: 4px 0 0;
+  font-size: 16px;
+}
+
+.finding-totals {
+  display: grid;
+  gap: 6px;
+  margin: 16px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.finding-totals > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.finding-totals dt {
+  color: var(--dim);
+  font-size: 15px;
+}
+
+.finding-totals dd {
+  margin: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.section-head {
+  margin: 24px 0 4px;
+  font-size: 17px;
+}
+
+/* ---- per-workweek breakdown --------------------------------------- */
+
+.week-list {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+}
+
+.week {
+  margin-top: 12px;
+  padding: 14px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.week-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.week-range {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.week-total {
+  font-size: 16px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.buckets {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.buckets li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 5px 0;
+  font-size: 15px;
+  border-bottom: 1px solid var(--line);
+}
+
+.week-check {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: var(--dim);
+}
+
+.reasons {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+}
+
+.reasons li {
+  margin-top: 8px;
+  padding-left: 12px;
+  border-left: 3px solid var(--accent);
+}
+
+.reason-hours {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.reason-basis {
+  display: block;
+  font-size: 14px;
+}
+
+.reason-statute {
+  display: block;
+  margin: 2px 0 0;
+  font-size: 12.5px;
+  color: var(--dim);
+}
+
+.week-owed {
+  margin: 12px 0 0;
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- asides ------------------------------------------------------- */
+
+/* Everything the headline figure deliberately EXCLUDES lives in one of these.
+   The dashed edge is the point: it reads as attached-but-separate, so a
+   possible break premium can never be mistaken for money owed. */
+.aside {
+  margin-top: 24px;
+  padding: 16px;
+  border: 1px dashed var(--dim);
+  border-radius: 10px;
+}
+
+.aside h3 {
+  margin: 0 0 8px;
+  font-size: 16px;
+}
+
+.aside p {
+  margin: 8px 0 0;
+  font-size: 15px;
+}
+
+.aside .hint {
+  font-size: 14px;
+}
+
+.caveat {
+  padding: 10px 12px;
+  background: var(--warn-bg);
+  border: 1px solid var(--warn);
+  border-radius: 8px;
+  color: var(--warn);
+  font-size: 14px;
+}
+
+.premium-list,
+.flag-list {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+}
+
+.premium-list li,
+.flag-list li {
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+}
+
+.premium-list p {
+  margin: 4px 0 0;
+  font-size: 14px;
+}
+
+.premium-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.premium-type {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+/* "if it applies" is part of the string, not decoration -- the amount is
+   never presented on its own, because on its own it looks like a total. */
+.premium-amount {
+  font-size: 14px;
+  color: var(--dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.premium-day {
+  color: var(--dim);
+}
+
+.flag-label {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.exclusion-list {
+  margin: 8px 0 0;
+  padding-left: 20px;
+  font-size: 15px;
+}
+
+.exclusion-list li + li {
+  margin-top: 4px;
+}
+
 /* ---- footer ------------------------------------------------------- */
 
 footer {
@@ -645,6 +1007,19 @@ footer {
 
   .tabs {
     padding: 10px 24px;
+  }
+
+  .tab {
+    padding: 0 4px;
+    font-size: 15px;
+  }
+
+  .finding {
+    padding: 20px;
+  }
+
+  .finding-amount {
+    font-size: 44px;
   }
 
   .card {

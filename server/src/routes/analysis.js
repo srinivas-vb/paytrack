@@ -12,19 +12,12 @@ router.use(requireWorker);
 
 const JURISDICTIONS = { federal, california };
 
-// Cal. Lab. Code s 226(a) -- the nine elements a wage statement must show.
-// See docs/wage-rules.md s5.
-const REQUIRED_WAGE_STATEMENT_FIELDS = [
-  { element: 'gross_wages', label: 'Gross wages earned', statute: 'Cal. Lab. Code § 226(a)(1)' },
-  { element: 'total_hours', label: 'Total hours worked', statute: 'Cal. Lab. Code § 226(a)(2)' },
-  { element: 'piece_rate', label: 'Piece-rate units and rate, if applicable', statute: 'Cal. Lab. Code § 226(a)(3)' },
-  { element: 'deductions', label: 'All deductions', statute: 'Cal. Lab. Code § 226(a)(4)' },
-  { element: 'net_wages', label: 'Net wages earned', statute: 'Cal. Lab. Code § 226(a)(5)' },
-  { element: 'pay_period_dates', label: 'Inclusive dates of the pay period', statute: 'Cal. Lab. Code § 226(a)(6)' },
-  { element: 'employee_identity', label: 'Employee name and last four of SSN or employee ID', statute: 'Cal. Lab. Code § 226(a)(7)' },
-  { element: 'employer_identity', label: 'Employer name and address', statute: 'Cal. Lab. Code § 226(a)(8)' },
-  { element: 'hourly_rates', label: 'All applicable hourly rates and hours worked at each', statute: 'Cal. Lab. Code § 226(a)(9)' },
-];
+// Cal. Lab. Code s 226(a) element vocabulary is owned by routes/paystubs.js,
+// which validates incoming keys against it and stores the missing set using
+// those exact strings. A second list here would silently never match the keys
+// that differ -- the elements would simply never be flagged, and an absent
+// violation looks identical to a compliant paystub. One list, imported.
+import { REQUIRED_ELEMENTS } from './paystubs.js';
 
 const SCOPE_EXCLUSIONS = ['tips', 'commissions', 'nondiscretionary bonuses'];
 
@@ -128,9 +121,13 @@ router.get('/', async (req, res, next) => {
     // flag precisely the elements that ARE present -- a silent inversion that
     // reads as a plausible result, so the column name is the source of truth
     // and the inversion happens exactly once, on write.
+    //
+    // NULL is tri-state and means "not assessed", NOT "all nine missing". A
+    // worker who never opened the checklist has not thereby reported nine
+    // violations. `|| []` collapses NULL to an empty set, so no flags.
     const missing = new Set(stub.missing_required_fields || []);
-    const complianceFlags = REQUIRED_WAGE_STATEMENT_FIELDS.filter((f) =>
-      missing.has(f.element)
+    const complianceFlags = REQUIRED_ELEMENTS.filter((f) => missing.has(f.key)).map(
+      (f) => ({ element: f.key, label: f.label, statute: f.statute })
     );
 
     res.json({

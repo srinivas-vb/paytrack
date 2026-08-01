@@ -142,6 +142,63 @@ export function verifyChain() {
   return request('/api/shifts/verify')
 }
 
+/* ---- paystubs ------------------------------------------------------ */
+
+export function listPaystubs() {
+  return request('/api/paystubs').then((r) => r?.paystubs ?? [])
+}
+
+/**
+ * `presentFields` is deliberately tri-state, matching the server:
+ * omit it entirely when the worker did not go through the checklist, so an
+ * unanswered form is never reported as nine missing elements.
+ */
+export function createPaystub({
+  periodStart,
+  periodEnd,
+  paidHours,
+  paidRate,
+  grossPay,
+  presentFields,
+}) {
+  return request('/api/paystubs', {
+    method: 'POST',
+    body: {
+      periodStart,
+      periodEnd,
+      paidHours,
+      paidRate,
+      grossPay,
+      ...(presentFields === undefined || presentFields === null
+        ? {}
+        : { presentFields }),
+    },
+  }).then((r) => r?.paystub ?? null)
+}
+
+export function deletePaystub(id) {
+  return request(`/api/paystubs/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+  })
+}
+
+/* ---- analysis ------------------------------------------------------ */
+
+/**
+ * The rule engine's verdict for one paystub under one jurisdiction.
+ *
+ * Not yet built at the time of writing. A 404 therefore means either "no such
+ * paystub" or "this endpoint does not exist yet", and the caller renders a
+ * "not available" state for both rather than crashing on an absent shape.
+ */
+export function getAnalysis({ paystubId, jurisdiction }) {
+  const params = new URLSearchParams({
+    paystubId: String(paystubId),
+    jurisdiction,
+  })
+  return request(`/api/analysis?${params.toString()}`)
+}
+
 /* ---- error copy ---------------------------------------------------- */
 
 /** Turns any thrown value into one plain sentence a stressed person can read. */
