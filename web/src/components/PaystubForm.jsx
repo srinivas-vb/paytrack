@@ -10,15 +10,37 @@ import { Notice } from './Ui.jsx'
  * Everything here is a transcription of a document the worker is holding. The
  * form never guesses and never fills anything in on their behalf — a number
  * this app invented and then used to accuse an employer would be worthless.
+ *
+ * `initialValues` is the one exception, and it is not an exception to that rule:
+ * a photo extraction (PaystubPhoto) can seed these boxes, but the values sit
+ * here unsaved until the worker has looked at them and pressed Save. Anything
+ * the reader was unsure about is named in `uncertainFields` and marked, so the
+ * checking effort lands where it is most needed. Remount with a `key` to seed
+ * again — state is initialised once, exactly as it was before.
  */
-export default function PaystubForm({ onCreated }) {
+export default function PaystubForm({
+  onCreated,
+  initialValues = null,
+  uncertainFields = null,
+}) {
   const today = useMemo(() => toDateInputValue(), [])
 
-  const [periodStart, setPeriodStart] = useState('')
-  const [periodEnd, setPeriodEnd] = useState('')
-  const [paidHours, setPaidHours] = useState('')
-  const [paidRate, setPaidRate] = useState('')
-  const [grossPay, setGrossPay] = useState('')
+  const seed = initialValues ?? {}
+  const uncertain = useMemo(
+    () => new Set(uncertainFields ?? []),
+    [uncertainFields],
+  )
+  // Cleared once the stub is saved, so an emptied form does not keep claiming
+  // its blank boxes came off a photo.
+  const [prefilled, setPrefilled] = useState(Boolean(initialValues))
+  const mark = (key) =>
+    prefilled && uncertain.has(key) ? ' field-from-photo' : ''
+
+  const [periodStart, setPeriodStart] = useState(seed.periodStart ?? '')
+  const [periodEnd, setPeriodEnd] = useState(seed.periodEnd ?? '')
+  const [paidHours, setPaidHours] = useState(seed.paidHours ?? '')
+  const [paidRate, setPaidRate] = useState(seed.paidRate ?? '')
+  const [grossPay, setGrossPay] = useState(seed.grossPay ?? '')
 
   // Tri-state, mirroring the API. `checklistUsed === false` omits presentFields
   // entirely, so a worker who does not have the statement to hand is never
@@ -119,6 +141,7 @@ export default function PaystubForm({ onCreated }) {
       setGrossPay('')
       setChecklistUsed(false)
       setPresent(new Set())
+      setPrefilled(false)
       setNotice({
         tone: 'good',
         title: 'Paystub saved.',
@@ -133,8 +156,16 @@ export default function PaystubForm({ onCreated }) {
 
   return (
     <form onSubmit={handleSubmit} noValidate>
+      {prefilled ? (
+        <p className="prefill-note">
+          These figures were read off your photo, not typed by you. Check every
+          one against the paystub before saving — nothing here is recorded until
+          you do.
+        </p>
+      ) : null}
+
       <div className="field-row">
-        <div className="field">
+        <div className={`field${mark('periodStart')}`}>
           <label htmlFor="ps-start">Pay period started</label>
           <input
             id="ps-start"
@@ -145,7 +176,7 @@ export default function PaystubForm({ onCreated }) {
             required
           />
         </div>
-        <div className="field">
+        <div className={`field${mark('periodEnd')}`}>
           <label htmlFor="ps-end">Pay period ended</label>
           <input
             id="ps-end"
@@ -158,7 +189,7 @@ export default function PaystubForm({ onCreated }) {
         </div>
       </div>
 
-      <div className="field">
+      <div className={`field${mark('paidHours')}`}>
         <label htmlFor="ps-hours">Hours it says you were paid for</label>
         <input
           id="ps-hours"
@@ -172,7 +203,7 @@ export default function PaystubForm({ onCreated }) {
       </div>
 
       <div className="field-row">
-        <div className="field">
+        <div className={`field${mark('paidRate')}`}>
           <label htmlFor="ps-rate">Hourly rate</label>
           <input
             id="ps-rate"
@@ -184,7 +215,7 @@ export default function PaystubForm({ onCreated }) {
             required
           />
         </div>
-        <div className="field">
+        <div className={`field${mark('grossPay')}`}>
           <label htmlFor="ps-gross">Gross pay</label>
           <input
             id="ps-gross"

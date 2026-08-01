@@ -1,0 +1,115 @@
+/* Evidence packet panel.
+ *
+ * Every colour here is one of the custom properties already declared in
+ * App.css, so this file inherits the light and dark themes without restating a
+ * single hex value. Nothing below sets a raw colour. */
+
+.report-manifest {
+  margin-top: 16px;
+  padding: 14px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.report-manifest-title {
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+.report-facts {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+}
+
+.report-facts > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.report-facts dt {
+  color: var(--dim);
+  font-size: 14px;
+}
+
+.report-facts dd {
+  margin: 0;
+  font-weight: 600;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* The chain result is stated whatever it says. "broken" is not an error state
+   of this panel -- it is a fact about the record, and it belongs in the packet
+   as much as an unbroken one does. Weight and a word carry it, not colour
+   alone. */
+.report-chain-ok {
+  color: var(--good);
+}
+
+.report-chain-broken {
+  color: var(--bad);
+}
+
+.report-chain-unknown {
+  color: var(--dim);
+  font-weight: 400;
+}
+
+.report-warn {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  font-size: 14px;
+  color: var(--warn);
+  background: var(--warn-bg);
+  border: 1px solid var(--warn);
+  border-radius: 8px;
+}
+
+.report-note {
+  margin: 8px 0 0;
+}
+
+/* What is in the file, in the order it appears in the file, so the list
+   doubles as a table of contents rather than a sales pitch. */
+.report-contents {
+  counter-reset: report-section;
+  list-style: none;
+  margin: 20px 0 0;
+  padding: 14px 0 0;
+  border-top: 1px solid var(--line);
+  font-size: 13.5px;
+  color: var(--dim);
+}
+
+.report-contents li {
+  counter-increment: report-section;
+  position: relative;
+  padding-left: 26px;
+}
+
+.report-contents li + li {
+  margin-top: 5px;
+}
+
+.report-contents li::before {
+  content: counter(report-section) '.';
+  position: absolute;
+  left: 0;
+  font-variant-numeric: tabular-nums;
+  color: var(--dim);
+}
+
+@media (min-width: 600px) {
+  .report-manifest {
+    padding: 16px 18px;
+  }
+}

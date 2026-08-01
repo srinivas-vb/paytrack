@@ -3,6 +3,9 @@ import * as api from '../api.js'
 import { formatCalendarDate, formatHours, formatMoney } from '../format.js'
 import AnalysisView from './AnalysisView.jsx'
 import PaystubForm from './PaystubForm.jsx'
+import PaystubPhoto from './PaystubPhoto.jsx'
+import ReportPanel from './ReportPanel.jsx'
+import FilingPanel from './FilingPanel.jsx'
 import { EmptyBlock, ErrorBlock, LoadingBlock, Notice } from './Ui.jsx'
 
 /**
@@ -27,6 +30,12 @@ export default function PayPanel({
   const [confirmingId, setConfirmingId] = useState(null)
   const [removingId, setRemovingId] = useState(null)
   const [notice, setNotice] = useState(null)
+
+  // Values read off a photo, waiting to be checked by a human. PaystubForm
+  // seeds from these on mount only, so `extractedAt` is used as its key —
+  // a second photo remounts the form with the new figures rather than
+  // silently leaving the first read on screen.
+  const [extracted, setExtracted] = useState(null)
 
   // The selection is DERIVED, not synced. Falling back to list[0] (newest pay
   // period, since the API sorts that way) means a deleted or not-yet-chosen
@@ -157,11 +166,28 @@ export default function PayPanel({
       </section>
 
       {selected ? (
-        <AnalysisView
-          paystubId={selected.id}
-          jurisdiction={jurisdiction}
-          onJurisdiction={setJurisdiction}
-        />
+        <>
+          <AnalysisView
+            paystubId={selected.id}
+            jurisdiction={jurisdiction}
+            onJurisdiction={setJurisdiction}
+          />
+
+          {/* The packet is what a worker actually hands to someone. It comes
+              straight after the analysis it is built from, so the figures on
+              screen and the figures in the file are visibly the same ones. */}
+          <ReportPanel paystubId={selected.id} jurisdiction={jurisdiction} />
+
+          {/* A PDF alone leaves the worker stuck. Fear of retaliation, not
+              lack of evidence, is the main reason people do not file — so the
+              next step and the protection come together, not on some other
+              screen the worker has to go looking for. */}
+          <FilingPanel
+            jurisdiction={jurisdiction}
+            periodStart={selected.periodStart}
+            periodEnd={selected.periodEnd}
+          />
+        </>
       ) : null}
 
       <section className="card">
@@ -171,7 +197,21 @@ export default function PayPanel({
           figure on your behalf — a number this app invented would be worth
           nothing to anyone reviewing your case.
         </p>
-        <PaystubForm onCreated={onChanged} />
+
+        {/* Photo first, form below. On a build with no reader configured this
+            says so and points at the form, which is why the form is always
+            rendered rather than hidden behind the photo path. */}
+        <PaystubPhoto onExtracted={(payload) => setExtracted({ ...payload, at: Date.now() })} />
+
+        <PaystubForm
+          key={extracted?.at ?? 'blank'}
+          initialValues={extracted?.fields ?? null}
+          uncertainFields={extracted?.uncertainFields ?? null}
+          onCreated={() => {
+            setExtracted(null)
+            onChanged()
+          }}
+        />
       </section>
     </>
   )

@@ -1,0 +1,319 @@
+/*
+ * Filing path and anti-retaliation.
+ *
+ * Uses only the custom properties already declared in App.css, so it inherits
+ * light and dark automatically and there is nothing here to keep in sync.
+ *
+ * The one structural rule: `.filing-lead` is used by BOTH the filing card and
+ * the retaliation card, at the same size and weight. That is what "equal visual
+ * weight" means here — not a claim in a comment, but literally the same
+ * typography on both, so neither can read as the footnote of the other.
+ */
+
+.filing-lead {
+  margin: 0 0 12px;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.filing-head {
+  margin: 22px 0 8px;
+  font-size: 16px;
+}
+
+/* ---- a filing route ------------------------------------------------ */
+
+.filing-route {
+  margin-top: 12px;
+  padding: 14px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.filing-agency {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.filing-what {
+  margin: 6px 0 0;
+  font-size: 15px;
+}
+
+.filing-cost {
+  margin: 10px 0 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--good);
+}
+
+.filing-form-name {
+  margin: 12px 0 0;
+  font-size: 15px;
+}
+
+/* Links are the whole point of this panel, so they are buttons, not text.
+   Full width below 400px -- a 360px screen has no room for two side by side
+   without one of them becoming a two-line 30px sliver. */
+.filing-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.filing-link {
+  flex: 1 1 100%;
+  min-height: 52px;
+  text-align: center;
+  text-decoration: none;
+}
+
+@media (min-width: 400px) {
+  .filing-link {
+    flex: 1 1 auto;
+  }
+}
+
+/* ---- lists --------------------------------------------------------- */
+
+.filing-steps {
+  margin: 0;
+  padding-left: 22px;
+  font-size: 15px;
+}
+
+.filing-steps li {
+  padding-left: 2px;
+}
+
+.filing-steps li + li {
+  margin-top: 10px;
+}
+
+.filing-bring {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 15px;
+}
+
+.filing-bring li {
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+}
+
+.filing-bring li:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.filing-extras {
+  list-style: none;
+  margin: 14px 0 0;
+  padding: 12px;
+  border: 1px dashed var(--dim);
+  border-radius: 10px;
+  font-size: 15px;
+}
+
+.filing-extras li + li {
+  margin-top: 10px;
+}
+
+.filing-extras a {
+  display: inline-block;
+  min-height: 32px;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.filing-extra-why {
+  display: block;
+  margin-top: 2px;
+  font-size: 14px;
+  color: var(--dim);
+}
+
+/* ---- the second route, folded away --------------------------------- */
+
+.filing-alt {
+  margin-top: 16px;
+  font-size: 15px;
+}
+
+.filing-alt summary {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  padding: 0 4px;
+  font-weight: 600;
+  color: var(--accent);
+  cursor: pointer;
+}
+
+/* ---- retaliation --------------------------------------------------- */
+
+/* Same card, same lead typography as the filing steps -- the accent rule marks
+   it as the other half of the same instruction, not as a warning strip. Not
+   red: this content is protective, and dressing it as danger would confirm the
+   exact fear that stops people filing. */
+.filing-shield {
+  border-left: 4px solid var(--accent);
+}
+
+.filing-law {
+  margin-top: 16px;
+  padding: 14px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.filing-law-scope {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+.filing-law-summary {
+  margin: 6px 0 0;
+  font-size: 16px;
+}
+
+.filing-remedies {
+  margin: 10px 0 0;
+  padding-left: 20px;
+  font-size: 15px;
+}
+
+.filing-remedies li + li {
+  margin-top: 6px;
+}
+
+.filing-statute {
+  margin: 10px 0 0;
+  font-size: 12.5px;
+  color: var(--dim);
+}
+
+.filing-statute-inline {
+  font-size: 12.5px;
+  color: var(--dim);
+  white-space: nowrap;
+}
+
+/* The 90-day presumption. It is the single most useful thing a worker can know
+   before they file, so it gets its own block inside the statute it comes from. */
+.filing-highlight {
+  margin-top: 14px;
+  padding: 12px;
+  background: var(--good-bg);
+  border: 1px solid var(--good);
+  border-radius: 8px;
+  font-size: 15px;
+}
+
+.filing-highlight p {
+  margin: 6px 0 0;
+}
+
+.filing-highlight-label {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--good);
+}
+
+.filing-immigration {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+/* ---- deadlines ----------------------------------------------------- */
+
+.filing-warning {
+  margin: 14px 0 0;
+  padding: 12px;
+  font-size: 15px;
+  color: var(--warn);
+  background: var(--warn-bg);
+  border: 1px solid var(--warn);
+  border-radius: 8px;
+}
+
+.filing-deadlines {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+}
+
+.filing-deadline {
+  margin-top: 12px;
+  padding: 14px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.filing-deadline-claim {
+  margin: 0;
+  font-size: 15px;
+  color: var(--dim);
+}
+
+/* The date is the headline, not the number of years. A worker reading this on
+   a phone should be able to answer "how long have I got" from one glance. */
+.filing-deadline-date {
+  margin: 4px 0 0;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+}
+
+.filing-deadline-date.urgent {
+  color: var(--warn);
+}
+
+.filing-deadline-date.expired {
+  color: var(--bad);
+}
+
+.filing-deadline-left,
+.filing-deadline-note {
+  margin: 6px 0 0;
+  font-size: 14px;
+}
+
+.filing-deadline-note {
+  color: var(--dim);
+}
+
+.filing-deadline-line {
+  margin: 10px 0 0;
+  font-size: 15px;
+}
+
+@media (min-width: 600px) {
+  .filing-lead {
+    font-size: 19px;
+  }
+
+  .filing-deadline-date {
+    font-size: 28px;
+  }
+
+  .filing-route,
+  .filing-law,
+  .filing-deadline {
+    padding: 16px;
+  }
+}

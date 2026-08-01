@@ -1,0 +1,265 @@
+/*
+ * Photo capture for paystubs.
+ *
+ * Only the custom properties already declared in App.css are used, so light and
+ * dark come for free and this file never has to know which one is active.
+ * Mobile-first: everything below is written for a 360px screen, and tap targets
+ * stay at the 48px the rest of the app uses.
+ */
+
+.photo {
+  margin-top: 4px;
+}
+
+.photo-intro {
+  margin: 0 0 14px;
+}
+
+/* ---- the picker ---------------------------------------------------- */
+
+.photo-pick {
+  margin-top: 8px;
+}
+
+/*
+ * A <label> rather than a button, because only a real file input can open the
+ * camera. The input is clipped instead of hidden so it stays keyboard
+ * focusable, and the ring is drawn on the label since that is what is visible.
+ */
+.photo-pick-label {
+  position: relative;
+  margin-top: 0;
+  text-align: center;
+  border-style: dashed;
+  border-color: var(--dim);
+  cursor: pointer;
+}
+
+.photo-pick-label:has(input:focus-visible) {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.photo-pick-label:has(input:disabled) {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.photo-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---- the preview --------------------------------------------------- */
+
+.photo-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 12px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+/* Contained, not cropped: a paystub cropped to a square tells the worker
+   nothing about whether the whole document is in frame. */
+.photo-thumb {
+  flex: none;
+  width: 96px;
+  height: 96px;
+  object-fit: contain;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.photo-facts {
+  flex: 1 1 180px;
+  min-width: 0;
+}
+
+.photo-dims {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.photo-privacy {
+  margin: 6px 0 0;
+  font-size: 13px;
+}
+
+/* ---- routed to manual --------------------------------------------- */
+
+/*
+ * Neutral on purpose. Manual entry is not a failure state, and the commonest
+ * way to reach this block is a 503 meaning "extraction isn't configured" —
+ * nothing has gone wrong at all. Red would be a lie about the situation.
+ */
+.photo-route {
+  margin-top: 16px;
+  padding: 14px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  border-radius: 10px;
+}
+
+.photo-route-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.photo-route-body {
+  margin: 6px 0 0;
+  font-size: 15px;
+}
+
+/* ---- a successful read -------------------------------------------- */
+
+/*
+ * Dashed, like the `.aside` blocks elsewhere: these numbers are attached to the
+ * form but are not yet part of the record. Nothing here has been saved.
+ */
+.photo-result {
+  margin-top: 16px;
+  padding: 14px;
+  background: var(--bg);
+  border: 1px dashed var(--warn);
+  border-radius: 10px;
+}
+
+.photo-fields {
+  display: grid;
+  gap: 0;
+  margin: 14px 0 0;
+}
+
+.photo-field {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 9px 0;
+  border-top: 1px solid var(--line);
+}
+
+.photo-field dt {
+  font-size: 14px;
+  color: var(--dim);
+}
+
+.photo-field dd {
+  margin: 0;
+  text-align: right;
+}
+
+.photo-value {
+  font-size: 16px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.photo-missing {
+  font-size: 14px;
+  color: var(--dim);
+}
+
+/* Marked twice over — a left rule as well as the badge — because colour and a
+   coloured word are the same signal to anyone who cannot see the colour. */
+.photo-field-check {
+  padding-left: 10px;
+  border-left: 3px solid var(--warn);
+}
+
+.photo-flag {
+  display: block;
+  margin-top: 2px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--warn);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.photo-confidence {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  font-size: 14px;
+  color: var(--warn);
+  background: var(--warn-bg);
+  border: 1px solid var(--warn);
+  border-radius: 8px;
+}
+
+.photo-warnings-block {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.photo-warnings-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--dim);
+}
+
+.photo-warnings {
+  margin: 6px 0 0;
+  padding-left: 20px;
+  font-size: 14px;
+}
+
+.photo-warnings li + li {
+  margin-top: 4px;
+}
+
+/* ---- fields the form was pre-filled with --------------------------- */
+
+/*
+ * Applied by PaystubForm to inputs whose value came from a photo and was not
+ * read confidently. It lives here rather than in App.css because it can only
+ * ever appear when this component supplied the value, which means this
+ * stylesheet is loaded.
+ */
+.field-from-photo input {
+  border-color: var(--warn);
+  border-width: 2px;
+}
+
+.field-from-photo label::after {
+  content: ' · check this';
+  color: var(--warn);
+  font-weight: 700;
+}
+
+.prefill-note {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  font-size: 14px;
+  color: var(--warn);
+  background: var(--warn-bg);
+  border: 1px solid var(--warn);
+  border-radius: 8px;
+}
+
+@media (min-width: 600px) {
+  .photo-thumb {
+    width: 120px;
+    height: 120px;
+  }
+}
