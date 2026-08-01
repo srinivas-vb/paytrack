@@ -1,104 +1,131 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
 import './App.css'
+import * as api from './api.js'
+import { useResource } from './useResource.js'
+import { getWorkerId, workerIdIsPersisted } from './workerId.js'
+import ClockPanel from './components/ClockPanel.jsx'
+import HistoryPanel from './components/HistoryPanel.jsx'
+import WorkplacesPanel from './components/WorkplacesPanel.jsx'
+import IntegrityPanel from './components/IntegrityPanel.jsx'
 
-// In dev, vite.config.js proxies /api -> localhost:3001, so this stays empty.
-// In production, set VITE_API_URL to the Render API URL.
-const API = import.meta.env.VITE_API_URL || ''
+const TABS = [
+  { id: 'clock', label: 'Clock' },
+  { id: 'history', label: 'History' },
+  { id: 'places', label: 'Places' },
+  { id: 'record', label: 'Record' },
+]
+
+// Module-level so their identity is stable and useResource does not re-fetch
+// on every render.
+const loadShifts = () => api.listShifts(100)
+const loadWorkplaces = () => api.listWorkplaces()
+const loadVerification = () => api.verifyChain()
 
 export default function App() {
-  const [status, setStatus] = useState({ state: 'loading' })
+  const [tab, setTab] = useState('clock')
+  const [retroOpen, setRetroOpen] = useState(false)
+  const [workerId] = useState(getWorkerId)
+  const [idPersisted] = useState(workerIdIsPersisted)
 
-  useEffect(() => {
-    const started = performance.now()
-    fetch(`${API}/api/health`)
-      .then(async (res) => {
-        const body = await res.json()
-        setStatus({
-          state: res.ok ? 'ok' : 'degraded',
-          body,
-          ms: Math.round(performance.now() - started),
-        })
-      })
-      .catch((err) =>
-        setStatus({
-          state: 'error',
-          error: err.message,
-          ms: Math.round(performance.now() - started),
-        }),
-      )
+  const shifts = useResource(loadShifts)
+  const workplaces = useResource(loadWorkplaces)
+  const verification = useResource(loadVerification)
+
+  const reloadShifts = shifts.reload
+  const reloadVerification = verification.reload
+  const reloadWorkplaces = workplaces.reload
+
+  // Anything that appends to the ledger changes both the shift list and the
+  // chain, so they refresh together.
+  const refreshLedger = useCallback(async () => {
+    await Promise.all([reloadShifts(), reloadVerification()])
+  }, [reloadShifts, reloadVerification])
+
+  const openRetroForm = useCallback(() => {
+    setRetroOpen(true)
+    setTab('history')
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }, [])
 
   return (
-    <main className="shell">
-      <header>
+    <div className="app">
+      <header className="app-header">
         <h1>PayTrack</h1>
         <p className="tagline">Your hours. Your record. Your evidence.</p>
       </header>
 
-      <section className="card">
-        <h2>Phase 0 — connectivity</h2>
-        <StatusRow status={status} />
-      </section>
+      <nav className="tabs" role="tablist" aria-label="Sections">
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            role="tab"
+            id={`tab-${t.id}`}
+            className="tab"
+            aria-selected={tab === t.id}
+            aria-controls={`panel-${t.id}`}
+            onClick={() => setTab(t.id)}
+          >
+            {t.label}
+          </button>
+        ))}
+      </nav>
 
-      <section className="card muted">
-        <h2>Next</h2>
-        <ol>
-          <li>Deploy the blueprint to Render; confirm Cron Jobs are available</li>
-          <li>
-            <code>npm run db:init</code> against the Render Postgres URL
-          </li>
-          <li>
-            <code>npm run db:verify</code> — watch the ledger refuse an UPDATE
-          </li>
-          <li>Phase 1: clock in/out, hash chain, retroactive entry</li>
-        </ol>
-      </section>
+      <main
+        className="shell"
+        role="tabpanel"
+        id={`panel-${tab}`}
+        aria-labelledby={`tab-${tab}`}
+      >
+        {tab === 'clock' ? (
+          <ClockPanel
+            status={shifts.status}
+            error={shifts.error}
+            openShift={shifts.data?.openShift ?? null}
+            onChanged={refreshLedger}
+            onRetry={reloadShifts}
+            onAddPastShift={openRetroForm}
+          />
+        ) : null}
 
-      <footer>
-        Prototype. Not legal advice, and not a substitute for a lawyer or your
-        state labor agency.
-      </footer>
-    </main>
-  )
-}
+        {tab === 'history' ? (
+          <HistoryPanel
+            status={shifts.status}
+            error={shifts.error}
+            shifts={shifts.data?.shifts ?? []}
+            onRetry={reloadShifts}
+            onChanged={refreshLedger}
+            retroOpen={retroOpen}
+            setRetroOpen={setRetroOpen}
+          />
+        ) : null}
 
-function StatusRow({ status }) {
-  if (status.state === 'loading') {
-    return <p className="status loading">checking API…</p>
-  }
+        {tab === 'places' ? (
+          <WorkplacesPanel
+            status={workplaces.status}
+            error={workplaces.error}
+            workplaces={workplaces.data ?? []}
+            onRetry={reloadWorkplaces}
+            onChanged={reloadWorkplaces}
+          />
+        ) : null}
 
-  if (status.state === 'error') {
-    return (
-      <div className="status bad">
-        <strong>API unreachable</strong>
-        <p>{status.error}</p>
-        <p className="hint">
-          Is the server running? <code>npm run dev:server</code>
-        </p>
-      </div>
-    )
-  }
+        {tab === 'record' ? (
+          <IntegrityPanel
+            status={verification.status}
+            error={verification.error}
+            result={verification.data}
+            onRetry={reloadVerification}
+            workerId={workerId}
+            workerIdPersisted={idPersisted}
+          />
+        ) : null}
 
-  const { body, ms, state } = status
-  return (
-    <div className={`status ${state === 'ok' ? 'good' : 'warn'}`}>
-      <strong>
-        API reachable <span className="dim">({ms}ms)</span>
-      </strong>
-      <dl>
-        <dt>service</dt>
-        <dd>{body.service}</dd>
-        <dt>database</dt>
-        <dd>{body.db ? 'connected' : 'not connected'}</dd>
-        <dt>server time</dt>
-        <dd>{body.time}</dd>
-      </dl>
-      {!body.db && (
-        <p className="hint">
-          Set <code>DATABASE_URL</code> in <code>.env</code>, then{' '}
-          <code>npm run db:init</code>.
-        </p>
-      )}
+        <footer>
+          Prototype. Not legal advice, and not a substitute for a lawyer or your
+          state labor agency.
+        </footer>
+      </main>
     </div>
   )
 }
