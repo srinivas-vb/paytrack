@@ -114,6 +114,7 @@ export const fixtures = [
       // Step 2: straight-time total is 40, NOT over 40 → no weekly OT added.
       // 40 × $20 = $800  +  5 × $30 = $150
       owed: 950,
+      expectedMealPremiums: 5, // five unbroken 9h days, each over 5 hours
     },
     wrongAnswer: {
       owed: 1100,
@@ -137,6 +138,7 @@ export const fixtures = [
       doubleTimeHours: 1, // hour 12–13
       // 8 × $20 = $160  +  4 × $30 = $120  +  1 × $40 = $40
       owed: 320,
+      expectedMealPremiums: 1, // over 10h owes a 2nd meal period, but s 226.7 caps recovery at one premium per workday
     },
     note: 'Exercises the 12-hour double-time boundary. Weekly total is 13h, so no weekly OT interaction.',
   },
@@ -165,6 +167,7 @@ export const fixtures = [
       // Day 7's 8 hours are promoted to 1.5× directly and excluded from step 2.
       // 40 × $20 = $800  +  16 × $30 = $480
       owed: 1280,
+      expectedMealPremiums: 7, // seven unbroken 8h days
     },
     note: '7th-day hours are promoted directly and must NOT also be counted in the weekly straight-time total.',
   },
@@ -212,6 +215,7 @@ export const fixtures = [
       doubleTimeHours: 1,
       // 20 × $20 = $400  +  4 × $30 = $120  +  1 × $40 = $40
       owed: 560,
+      expectedMealPremiums: 1, // only the 13h day exceeds 5 hours; the four 3h days do not
     },
     note: 'Same 25 hours, $60 more than federal. This pair is the clearest demonstration of why jurisdiction matters.',
   },
