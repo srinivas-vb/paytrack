@@ -1,0 +1,22 @@
+{
+  "name": "paytrack",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Employer-independent, tamper-evident wage evidence for workers",
+  "workspaces": [
+    "server",
+    "web"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=server & npm run dev --workspace=web",
+    "dev:server": "npm run dev --workspace=server",
+    "dev:web": "npm run dev --workspace=web",
+    "build": "npm run build --workspace=web",
+    "db:init": "node scripts/db-init.js",
+    "db:verify": "node scripts/verify-append-only.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

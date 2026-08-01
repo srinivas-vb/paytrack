@@ -1,0 +1,159 @@
+:root {
+  --bg: #ffffff;
+  --fg: #16181d;
+  --dim: #6b7280;
+  --line: #e5e7eb;
+  --card: #f9fafb;
+  --good: #047857;
+  --good-bg: #ecfdf5;
+  --warn: #b45309;
+  --warn-bg: #fffbeb;
+  --bad: #b91c1c;
+  --bad-bg: #fef2f2;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f1115;
+    --fg: #e8eaed;
+    --dim: #9aa1ab;
+    --line: #262a33;
+    --card: #161920;
+    --good: #34d399;
+    --good-bg: #052e23;
+    --warn: #fbbf24;
+    --warn-bg: #2d2005;
+    --bad: #f87171;
+    --bad-bg: #2d0b0b;
+  }
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: 15px/1.55 ui-sans-serif, system-ui, -apple-system, sans-serif;
+}
+
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.9em;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+.shell {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 48px 24px 64px;
+}
+
+header h1 {
+  margin: 0;
+  font-size: 30px;
+  letter-spacing: -0.02em;
+}
+
+.tagline {
+  margin: 6px 0 0;
+  color: var(--dim);
+}
+
+.card {
+  margin-top: 28px;
+  padding: 20px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.card h2 {
+  margin: 0 0 14px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+.card.muted ol {
+  margin: 0;
+  padding-left: 20px;
+  color: var(--dim);
+}
+
+.card.muted li + li {
+  margin-top: 6px;
+}
+
+.status {
+  border-radius: 8px;
+  padding: 14px;
+  border: 1px solid transparent;
+}
+
+.status.loading {
+  color: var(--dim);
+  margin: 0;
+}
+
+.status.good {
+  background: var(--good-bg);
+  border-color: var(--good);
+  color: var(--good);
+}
+
+.status.warn {
+  background: var(--warn-bg);
+  border-color: var(--warn);
+  color: var(--warn);
+}
+
+.status.bad {
+  background: var(--bad-bg);
+  border-color: var(--bad);
+  color: var(--bad);
+}
+
+.status p {
+  margin: 8px 0 0;
+}
+
+.dim {
+  opacity: 0.7;
+  font-weight: 400;
+}
+
+.status dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 3px 14px;
+  margin: 12px 0 0;
+  color: var(--fg);
+  font-size: 13px;
+}
+
+.status dt {
+  color: var(--dim);
+}
+
+.status dd {
+  margin: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.hint {
+  font-size: 13px;
+  color: var(--fg);
+  opacity: 0.85;
+}
+
+footer {
+  margin-top: 36px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+  font-size: 12.5px;
+  color: var(--dim);
+}

@@ -1,0 +1,19 @@
+node_modules/
+dist/
+build/
+
+# Secrets. ANTHROPIC_API_KEY and DATABASE_URL live here -- never commit.
+.env
+.env.local
+.env.*.local
+
+*.log
+npm-debug.log*
+.DS_Store
+.vscode/
+.idea/
+
+# Scratch: demo paystub photos, generated PDFs
+/tmp/
+*.pdf
+!docs/**/*.pdf
