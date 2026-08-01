@@ -13,6 +13,16 @@ CREATE TABLE IF NOT EXISTS workplaces (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Soft delete. hours_log.workplace_id references this table, so a workplace
+-- that any shift has ever used cannot be physically removed -- the evidence
+-- ledger must keep resolving the label it was recorded against. Hiding a
+-- workplace from the worker's list and preserving it for historical lookup are
+-- different things, and deleted_at names that state directly.
+--
+-- ON DELETE SET NULL on the FK would be the wrong fix: it rewrites hours_log
+-- rows, which is exactly what an append-only ledger exists to prevent.
+ALTER TABLE workplaces ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ;
+
 CREATE INDEX IF NOT EXISTS workplaces_worker_idx ON workplaces (worker_id);
 
 -- ---------------------------------------------------------------------------

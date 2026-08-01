@@ -4,6 +4,8 @@ import cors from 'cors';
 
 import { dbHealthy } from './db.js';
 import { migrate } from './migrate.js';
+import shiftsRouter from './routes/shifts.js';
+import workplacesRouter from './routes/workplaces.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -65,19 +67,34 @@ app.get('/', (_req, res) => {
 });
 
 // ---------------------------------------------------------------------------
-// Phase 1+ routes mount here:
-//   /api/shifts      clock in/out, hash chain, retroactive entry
-//   /api/workplaces  worker-defined locations
+// Routes. Each router applies requireWorker itself, so identity is enforced
+// regardless of where it is mounted.
+//
+// Phase 3+ will add:
 //   /api/paystubs    vision extraction
 //   /api/analysis    rule engine output
 //   /api/explain     LLM legal explainer
 // ---------------------------------------------------------------------------
+app.use('/api/shifts', shiftsRouter);
+app.use('/api/workplaces', workplacesRouter);
 
 app.use((_req, res) => res.status(404).json({ error: 'not found' }));
 
 app.use((err, _req, res, _next) => {
-  console.error('[api]', err);
-  res.status(500).json({ error: err.message || 'internal error' });
+  // Respect err.status. express.json() raises a SyntaxError carrying
+  // status 400 for malformed bodies; flattening that to 500 would report a
+  // client mistake as a server fault and bury real faults in the logs.
+  const status = Number.isInteger(err.status) && err.status >= 400 && err.status < 600
+    ? err.status
+    : 500;
+
+  if (status >= 500) console.error('[api]', err);
+
+  res.status(status).json({
+    error: status === 400 && err.type === 'entity.parse.failed'
+      ? 'malformed JSON body'
+      : err.message || 'internal error',
+  });
 });
 
 // Apply the schema before accepting traffic. Runs over Render's internal
