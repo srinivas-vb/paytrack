@@ -1,70 +1,80 @@
 /* ===========================================================================
-   PayTrack — ledger
+   PayTrack — blush ledger
    ---------------------------------------------------------------------------
-   The material world of this product is the timecard: ruled paper, punch
-   columns, a grid of days against times. PayTrack exists because the
-   employer's grid was the only one that counted -- so the page draws the
-   worker's own, and it runs edge to edge behind everything.
+   Palette and chrome follow moe-capital.com: a blush off-white canvas
+   (#F8F2F5), pure black type, 4px radii, and almost no borders -- that page
+   carries ZERO on any element and separates by whitespace and surface value
+   alone. Cards here do the same; hairlines survive only inside data tables,
+   where columns genuinely need them and a marketing page has none.
 
-   Palette is paper greys with muted pastels. Nothing is alarm-red: the app
-   tells people they may be owed money and that retaliation is illegal, and
-   dressing either in danger colours would confirm the fear that stops workers
-   filing in the first place.
+   Its display face is a pixel typeface at 46px/400 -- large but LIGHT, never
+   bold. That is a webfont this project cannot load, so the display sets in
+   mono at weight 400 instead: the nearest honest system equivalent, and
+   already true to what this app is. Every figure is mono with tabular
+   figures, because a timecard is a ledger and entries should line up.
 
-   Numbers are monospace everywhere. Hours, money, hashes and dates are ledger
-   entries, and they should line up in a column like entries do.
+   Two deliberate departures. The reference uses acid green and electric
+   violet as loud accents; this app tells people they may be owed money and
+   that retaliation is illegal, so the violet is pulled a notch off electric
+   and the alarm colours are dropped entirely -- dressing protective content
+   as danger confirms the fear that stops workers filing. And the ruled grid
+   behind everything stays: this product exists because the employer's
+   timecard was the only grid that counted, so the page draws the worker's own.
    =========================================================================== */
 
 :root {
   color-scheme: light dark;
 
-  --paper: #e9ecef; /* the page itself */
-  --bg: #eef1f4; /* header/nav wash */
-  --card: #fbfcfd; /* raised surfaces */
-  --fg: #14171a; /* soft black, never #000 */
-  --dim: #616872;
-  --line: #d6dbe0;
-  --rule: #dde2e8; /* the ambient timecard grid */
+  --paper: #f8f2f5; /* blush off-white -- the canvas */
+  --bg: #f2eaee; /* nav wash, a half-step down */
+  --card: #ffffff; /* pure white, no tint */
+  --fg: #000000; /* pure black. Headings commit. */
+  --dim: rgba(0, 0, 0, 0.46);
+  --line: rgba(0, 0, 0, 0.09); /* hairlines, only where data needs them */
+  --rule: rgba(0, 0, 0, 0.045); /* the ambient timecard grid */
 
-  --accent: #6d8fad; /* dusty blue -- the primary action */
+  --accent: #6b46e0; /* violet, one notch off electric so it can sit on white */
   --accent-fg: #ffffff;
-  --focus: #4a7ea8;
+  --focus: #6b46e0;
 
-  --good: #4c7d63; /* sage */
-  --good-bg: #e6efe9;
-  --warn: #92653f; /* clay */
-  --warn-bg: #f6ece3;
-  --bad: #9c5a63; /* muted rose, deliberately not alarm red */
-  --bad-bg: #f6e9ea;
+  --good: #2f7d55;
+  --good-bg: #edf5f0;
+  --warn: #8a5a2b;
+  --warn-bg: #f8f0e7;
+  --bad: #8f4450;
+  --bad-bg: #f9edef;
 
-  --shadow: #b9c2cc; /* the hard offset under raised things */
-  --edge: #9fa9b4; /* button borders -- a mid tone, never the text colour */
-  --lift: 3px;
+  --shadow: rgba(0, 0, 0, 0.14);
+  --edge: rgba(0, 0, 0, 0.16);
+  --lift: 2px;
+  --r: 4px; /* radii are small and consistent -- nothing is a pill */
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --paper: #13161a;
-    --bg: #171b20;
-    --card: #1c2127;
-    --fg: #e4e8ec;
-    --dim: #97a0aa;
-    --line: #2b323a;
-    --rule: #1f252c;
+    /* The blush carried through: the dark canvas keeps the same rose cast
+       rather than going neutral grey, so both schemes are the same product. */
+    --paper: #14100f;
+    --bg: #1a1514;
+    --card: #201a19;
+    --fg: #faf6f7;
+    --dim: rgba(250, 246, 247, 0.5);
+    --line: rgba(250, 246, 247, 0.12);
+    --rule: rgba(250, 246, 247, 0.05);
 
-    --accent: #8bb0cd;
-    --accent-fg: #101820;
-    --focus: #a8c8e0;
+    --accent: #a78bfa;
+    --accent-fg: #17111f;
+    --focus: #a78bfa;
 
-    --good: #8fbba1;
-    --good-bg: #17271e;
-    --warn: #cfa47c;
-    --warn-bg: #2a2018;
-    --bad: #c9909a;
-    --bad-bg: #2a1a1d;
+    --good: #7fc0a0;
+    --good-bg: #16231d;
+    --warn: #d3a473;
+    --warn-bg: #241c14;
+    --bad: #cf8f9c;
+    --bad-bg: #241619;
 
-    --shadow: #0a0d11;
-    --edge: #3d4650;
+    --shadow: rgba(0, 0, 0, 0.6);
+    --edge: rgba(250, 246, 247, 0.2);
   }
 }
 
@@ -157,9 +167,14 @@ code {
 
 .app-header h1 {
   margin: 0;
-  font-size: 27px;
-  font-weight: 700;
-  letter-spacing: -0.03em;
+  /* Large but weight 400, set in mono. The reference page carries its display
+     type in a pixel face at 46px/400 -- large and light, never bold. That font
+     is a webfont this project cannot load, so the nearest honest system
+     equivalent is mono, which is also what this app's data already is. */
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 34px;
+  font-weight: 400;
+  letter-spacing: -0.045em;
 }
 
 .tagline {
@@ -203,7 +218,7 @@ code {
   color: var(--dim);
   background: transparent;
   border: 1px solid transparent;
-  border-radius: 9px;
+  border-radius: var(--r);
   cursor: pointer;
   transition: color 0.14s, background 0.14s;
 }
@@ -221,21 +236,27 @@ code {
 
 /* ---- cards -------------------------------------------------------- */
 
+/* The reference page has ZERO borders on any element -- separation is
+   whitespace and surface value alone. Cards follow that: white on blush,
+   generous padding, no outline and no shadow. Hairlines survive only inside
+   data tables further down, where columns genuinely need them. */
 .card {
-  margin-top: 18px;
-  padding: 20px 18px;
+  margin-top: 22px;
+  padding: 26px 24px;
   background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  box-shadow: 0 1px 0 var(--shadow);
+  border: 0;
+  border-radius: var(--r);
 }
 
 .card h2 {
-  margin: 0 0 14px;
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  margin: 0 0 16px;
+  /* Lower case, mono, weight 400. The reference page uses no uppercase at all;
+     these stay legible as labels through the face change rather than shouting. */
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12.5px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
   color: var(--dim);
 }
 
@@ -252,7 +273,7 @@ code {
 /* ---- status blocks ------------------------------------------------ */
 
 .status {
-  border-radius: 8px;
+  border-radius: var(--r);
   padding: 14px;
   border: 1px solid transparent;
 }
@@ -338,7 +359,7 @@ code {
   color: inherit;
   background: transparent;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--r);
   cursor: pointer;
 }
 
@@ -364,8 +385,8 @@ code {
   font-weight: 600;
   color: var(--fg);
   background: var(--card);
-  border: 1.5px solid var(--edge);
-  border-radius: 10px;
+  border: 1px solid var(--edge);
+  border-radius: var(--r);
   cursor: pointer;
   box-shadow: var(--lift) var(--lift) 0 var(--shadow);
   transition:
@@ -497,7 +518,7 @@ code {
   margin-top: 18px;
   padding: 12px;
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--r);
   cursor: pointer;
   font-size: 15px;
 }
@@ -540,7 +561,7 @@ code {
   color: var(--fg);
   background: var(--bg);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--r);
 }
 
 .field-row {
@@ -560,7 +581,7 @@ code {
   color: var(--bad);
   background: var(--bad-bg);
   border: 1px solid var(--bad);
-  border-radius: 8px;
+  border-radius: var(--r);
 }
 
 .field-preview {
@@ -848,7 +869,7 @@ code {
   gap: 4px;
   padding: 4px;
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--r);
   background: var(--bg);
 }
 
@@ -861,7 +882,7 @@ code {
   color: var(--dim);
   background: transparent;
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: var(--r);
   cursor: pointer;
 }
 
@@ -882,7 +903,7 @@ code {
   padding: 18px 16px;
   background: var(--bg);
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--r);
 }
 
 .finding-label {
@@ -951,7 +972,7 @@ code {
   padding: 14px;
   background: var(--bg);
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--r);
 }
 
 .week-head {
@@ -1041,7 +1062,7 @@ code {
   margin-top: 24px;
   padding: 16px;
   border: 1px dashed var(--dim);
-  border-radius: 10px;
+  border-radius: var(--r);
 }
 
 .aside h3 {
@@ -1062,7 +1083,7 @@ code {
   padding: 10px 12px;
   background: var(--warn-bg);
   border: 1px solid var(--warn);
-  border-radius: 8px;
+  border-radius: var(--r);
   color: var(--warn);
   font-size: 14px;
 }
