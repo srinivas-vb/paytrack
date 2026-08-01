@@ -297,3 +297,122 @@ The headline endpoint.
    plainly as positive ones.
 6. **Money is computed in cents** internally and rounded once at the boundary.
    Never accumulate floats across a loop.
+
+---
+
+# Phases 3 / 5 / 6 contract
+
+Built in parallel. **No new tabs** — the tab bar already holds five and barely
+fits 360px. Everything here is a component composed into the existing **Pay**
+tab, below the analysis. I (the integrator) own `App.jsx`, `App.css`,
+`index.js`, and `package.json`; agents own their own files and their own CSS.
+
+## Phase 5 — Evidence packet (PDF)
+
+`buildEvidencePacket({ analysis, shifts, paystub, verification, workerId })` →
+`Blob`, via jsPDF (already installed, `jspdf@^4`).
+
+Inputs are exactly the existing API responses: `GET /api/analysis`,
+`GET /api/shifts`, the paystub row, and `GET /api/shifts/verify`.
+
+The document must contain, in order:
+1. **What this is** — a worker's own contemporaneous record, plus the plain
+   statement that it is not legal advice.
+2. **The headline figure** — with the jurisdiction named, and rendered exactly
+   as plainly when it is zero or negative.
+3. **Per-workweek breakdown** — hour buckets and `reasons[]` with statutes, so
+   the arithmetic is auditable rather than asserted.
+4. **The shift log** — every entry, with `createdAt` (server time) shown
+   alongside `clockIn`, and retroactive entries clearly marked as such. The gap
+   between claimed and recorded time is evidence, not something to hide.
+5. **Chain verification** — status, entry count, latest hash.
+6. **Potential premiums** — separately, under a heading that says they are not
+   included in the amount claimed.
+7. **Scope exclusions and limitations** — tips/commissions/bonuses excluded;
+   GPS is corroboration not proof; PayTrack cannot see breaks.
+
+The packet is handed to a labor commissioner or a lawyer. **Every number in it
+must be traceable to a row.** Do not summarize away the underlying entries.
+
+## Phase 6 — Filing path
+
+`web/src/jurisdictions.js` exports `getFilingInfo(jurisdiction)` →
+
+```jsonc
+{
+  "agency": "California Labor Commissioner (DLSE)",
+  "formName": "Form 1 — Initial Report or Claim",
+  "url": "https://www.dir.ca.gov/dlse/HowToFileWageClaim.htm",
+  "deadlines": [
+    { "claim": "Unpaid overtime (statutory)", "years": 3, "statute": "Cal. Code Civ. Proc. § 338" },
+    { "claim": "FLSA overtime", "years": 2, "statute": "29 U.S.C. § 255(a)", "note": "3 years if the violation was willful" }
+  ],
+  "antiRetaliation": [
+    { "statute": "29 U.S.C. § 215(a)(3)", "summary": "..." },
+    { "statute": "Cal. Lab. Code § 98.6", "summary": "..." }
+  ]
+}
+```
+
+**Anti-retaliation is the most important content in this phase, not a footnote.**
+Fear of retaliation — not lack of evidence — is the main reason workers don't
+file. Give it equal visual weight to the filing steps, state that retaliation
+is separately illegal and separately actionable, and do not bury it.
+
+Deadlines must be shown as a **remaining window computed from the pay period**,
+not just a number of years — "you have until roughly March 2029" is actionable
+in a way that "3 years" is not. Round conservatively and say it is approximate.
+
+## Phase 3 — Extraction
+
+### Client (`web/src/imageCapture.js`)
+`captureAndPrepare(file)` → `{ dataUrl, width, height, bytes }`
+
+- Downscale to **2576px** on the long edge. Not 1568 — Claude Opus 5 supports
+  high-resolution vision, and paystubs are small print in dense tables where
+  that detail is exactly what is being read.
+- Strip EXIF by re-encoding through a canvas; honour EXIF orientation first so
+  a portrait photo is not rotated.
+- JPEG quality ~0.85. Reject non-images and anything over 25 MB before resize.
+
+### Server (`server/src/routes/extract.js` + `server/src/lib/extractProvider.js`)
+
+`POST /api/extract` accepts `{ imageDataUrl }` → `ExtractedPaystub`:
+
+```jsonc
+{
+  "source": "llm" | "manual",
+  "confidence": "high" | "low" | "none",
+  "fields": {
+    "periodStart": "2026-07-05", "periodEnd": "2026-07-18",
+    "paidHours": 78, "paidRate": 20, "grossPay": 1600
+  },
+  "presentFields": ["gross_wages", "total_hours"],
+  "warnings": ["gross pay was not legible"]
+}
+```
+
+**The provider is an interface with a stub implementation.** `ANTHROPIC_API_KEY`
+is deliberately not set — the user does not want to be billed yet. So:
+
+```js
+// lib/extractProvider.js
+export async function extractPaystub({ imageDataUrl }) { ... }
+export function isConfigured() { return Boolean(process.env.ANTHROPIC_API_KEY); }
+```
+
+When unconfigured, `POST /api/extract` returns **`503`** with a clear body
+(`{"error": "...", "fallback": "manual"}`) — not a 500, and not a fake result.
+The UI must route to manual entry on 503 without presenting it as a failure.
+
+Write the real vision call **behind that interface**, fully formed, so enabling
+it later is setting an env var rather than writing code. Do not invent
+extraction results when unconfigured — a plausible fabricated paystub is far
+worse than an honest "not available".
+
+### Review before save — non-negotiable
+Extracted values **pre-fill the existing manual form for the worker to check**;
+they are never saved directly. Low-confidence fields must be visually marked.
+This is a record someone may rely on in a legal proceeding — a
+silently-wrong OCR read that nobody was asked to confirm is the worst outcome
+this product can produce.
