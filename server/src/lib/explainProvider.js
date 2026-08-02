@@ -40,12 +40,25 @@
  */
 
 /**
- * Same alias, and for the same reason as extractProvider: a pinned version was
- * already dead on arrival here (gemini-2.5-flash 404s for new keys), and a
- * hackathon project will not be around to notice the next deprecation.
- * GEMINI_MODEL overrides it if a specific version matters.
+ * An alias rather than a pinned version, for the same reason as
+ * extractProvider: a pinned version was already dead on arrival here
+ * (gemini-2.5-flash 404s for new keys), and a hackathon project will not be
+ * around to notice the next deprecation.
+ *
+ * A DIFFERENT alias from extractProvider's, and its own env var, on purpose.
+ * The free tier meters `generate_content_free_tier_requests` at 20/day PER
+ * MODEL, not per key -- verified by calling both at the same moment, one
+ * returning 429 while the other returned 200. Sharing GEMINI_MODEL therefore
+ * made these two features compete for one bucket, and the explainer is the
+ * one you re-run while rehearsing.
+ *
+ * Vision extraction is the feature that cannot degrade: there is no manual
+ * fallback for reading a photograph, whereas an explanation that never renders
+ * costs the worker nothing -- the figures are already on screen. So extraction
+ * keeps the full-size model's quota to itself and the explainer, which is
+ * writing prose about numbers it was handed, runs on lite.
  */
-export const MODEL = process.env.GEMINI_MODEL || 'gemini-flash-latest';
+export const MODEL = process.env.GEMINI_EXPLAIN_MODEL || 'gemini-flash-lite-latest';
 
 const API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
 
