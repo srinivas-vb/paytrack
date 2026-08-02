@@ -27,7 +27,16 @@ import { REQUIRED_ELEMENTS } from '../routes/paystubs.js';
 const ELEMENT_KEYS = REQUIRED_ELEMENTS.map((e) => e.key);
 const ELEMENT_KEY_SET = new Set(ELEMENT_KEYS);
 
-export const MODEL = 'claude-opus-5';
+/**
+ * `gemini-flash-latest` is an alias, chosen on purpose over a pinned version.
+ * A pinned id was already dead on arrival here -- gemini-2.5-flash returns 404
+ * for new keys with "no longer available to new users" -- and a hackathon
+ * project will not be around to notice the next deprecation. The alias tracks
+ * whatever is current; GEMINI_MODEL overrides it if a specific version matters.
+ */
+export const MODEL = process.env.GEMINI_MODEL || 'gemini-flash-latest';
+
+const API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
 
 /**
  * Output budget. Thinking is ON (adaptive, the default on claude-opus-5) and
@@ -76,7 +85,7 @@ const MAX_WARNING_LENGTH = 300;
  * is user-facing prose the route may pass straight through.
  *
  *   not_configured    -- no API key. Route -> 503, fallback: manual.
- *   dependency_missing-- key set but @anthropic-ai/sdk not installed. Also 503:
+ *   dependency_missing-- retained for callers; no SDK is used any more. Also 503:
  *                        from the worker's point of view the feature is simply
  *                        off, and manual entry is the same one-click answer.
  *   invalid_image     -- the input cannot be sent as-is. Route -> 400.
@@ -108,7 +117,7 @@ export const EXTRACTION_ERROR_CODES = Object.freeze({
  * re-imported to notice.
  */
 export function isConfigured() {
-  return Boolean(process.env.ANTHROPIC_API_KEY);
+  return Boolean(process.env.GEMINI_API_KEY);
 }
 
 // ---------------------------------------------------------------------------
@@ -448,52 +457,44 @@ export function normaliseExtraction(parsed) {
 // The call
 // ---------------------------------------------------------------------------
 
-let clientPromise = null;
-
 /**
- * Builds the SDK client on first use.
+ * JSON Schema -> Gemini's responseSchema dialect.
  *
- * The import is dynamic so that an unconfigured deployment -- which is this
- * one -- boots and serves 503s correctly whether or not @anthropic-ai/sdk has
- * been installed yet. A top-level import would make a missing node_modules
- * entry crash the entire API at startup over a feature nobody has enabled.
+ * Gemini takes a restricted OpenAPI subset, not JSON Schema: types are
+ * upper-case, nullability is a `nullable` flag rather than a union with
+ * "null", and `additionalProperties` is not understood.
+ *
+ * Converting at call time rather than hand-maintaining a second schema means
+ * EXTRACTION_SCHEMA stays the single source of truth. Two schemas would drift,
+ * and the drift would show up as a field silently never being extracted.
  */
-async function getClient() {
-  if (!clientPromise) {
-    clientPromise = (async () => {
-      let Anthropic;
-      try {
-        ({ default: Anthropic } = await import('@anthropic-ai/sdk'));
-      } catch (err) {
-        throw new ExtractionError(
-          EXTRACTION_ERROR_CODES.DEPENDENCY_MISSING,
-          'Automatic extraction is not available on this server: the vision client is not installed. Manual entry works and produces the same record.',
-          { cause: err }
-        );
-      }
-      return new Anthropic({
-        apiKey: process.env.ANTHROPIC_API_KEY,
-        timeout: REQUEST_TIMEOUT_MS,
-        maxRetries: 2,
-      });
-    })().catch((err) => {
-      // Don't cache a failed construction: installing the dependency and
-      // retrying should work without a restart.
-      clientPromise = null;
-      throw err;
-    });
-  }
-  return clientPromise;
-}
+function toGeminiSchema(node) {
+  if (!node || typeof node !== 'object') return node;
 
-/** Finds the JSON body in the response. */
-function textOf(message) {
-  const blocks = Array.isArray(message?.content) ? message.content : [];
-  return blocks
-    .filter((b) => b?.type === 'text' && typeof b.text === 'string')
-    .map((b) => b.text)
-    .join('')
-    .trim();
+  // `anyOf: [X, {type: 'null'}]` is how the source schema spells "nullable".
+  if (Array.isArray(node.anyOf)) {
+    const nonNull = node.anyOf.filter((b) => b?.type !== 'null');
+    const nullable = nonNull.length !== node.anyOf.length;
+    const merged = toGeminiSchema(nonNull[0] ?? {});
+    if (nullable) merged.nullable = true;
+    if (node.description) merged.description = node.description;
+    return merged;
+  }
+
+  const out = {};
+  if (node.type) out.type = String(node.type).toUpperCase();
+  if (node.description) out.description = node.description;
+  if (node.enum) out.enum = node.enum;
+  if (node.items) out.items = toGeminiSchema(node.items);
+  if (node.required) out.required = node.required;
+  if (node.properties) {
+    out.properties = Object.fromEntries(
+      Object.entries(node.properties).map(([k, v]) => [k, toGeminiSchema(v)])
+    );
+  }
+  // `format` and `additionalProperties` are dropped: Gemini rejects formats it
+  // does not know, and the field descriptions already carry the shape.
+  return out;
 }
 
 /**
@@ -526,62 +527,88 @@ export async function extractPaystub({ imageDataUrl } = {}) {
     );
   }
 
-  const client = await getClient();
+  // Raw fetch rather than an SDK: the REST surface is small, it is one fewer
+  // dependency to install on a free-tier box, and a missing node_modules entry
+  // can no longer take the whole API down over a feature nobody enabled.
+  const url = `${API_BASE}/${encodeURIComponent(MODEL)}:generateContent`;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
-  let message;
+  let res;
   try {
-    message = await client.messages.create({
-      model: MODEL,
-      max_tokens: MAX_TOKENS,
-      system: SYSTEM_PROMPT,
-      // `thinking` is deliberately omitted: on claude-opus-5 that runs adaptive,
-      // which is what we want for reading a dense table. Cost is controlled by
-      // effort, not by disabling thinking -- see MAX_TOKENS for why disabling
-      // it is the wrong lever on this model.
-      output_config: {
-        effort: 'medium',
-        format: { type: 'json_schema', schema: EXTRACTION_SCHEMA },
+    res = await fetch(url, {
+      method: 'POST',
+      signal: controller.signal,
+      headers: {
+        'Content-Type': 'application/json',
+        // Header rather than ?key= so the key cannot end up in a proxy log or
+        // an error message that echoes the request URL.
+        'x-goog-api-key': process.env.GEMINI_API_KEY,
       },
-      // No temperature / top_p / top_k: this model rejects them with a 400.
-      messages: [
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'image',
-              source: { type: 'base64', media_type: parsed.mediaType, data: parsed.base64 },
-            },
-            { type: 'text', text: USER_INSTRUCTION },
-          ],
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+        contents: [
+          {
+            role: 'user',
+            parts: [
+              { inline_data: { mime_type: parsed.mediaType, data: parsed.base64 } },
+              { text: USER_INSTRUCTION },
+            ],
+          },
+        ],
+        generationConfig: {
+          // Grammar-constrained output, so the response cannot arrive as prose
+          // wrapped in a code fence -- the whole class of parse failure is gone.
+          responseMimeType: 'application/json',
+          responseSchema: toGeminiSchema(EXTRACTION_SCHEMA),
+          maxOutputTokens: MAX_TOKENS,
+          temperature: 0,
         },
-      ],
+      }),
     });
   } catch (err) {
-    // Network failure, timeout, upstream 4xx/5xx. The caller gets a 502 and the
-    // worker gets pointed at manual entry; the detail stays in the server log.
     throw new ExtractionError(
       EXTRACTION_ERROR_CODES.PROVIDER_FAILURE,
       'The paystub reader could not be reached. Enter the paystub by hand instead -- manual entry produces exactly the same record.',
       { cause: err }
     );
+  } finally {
+    clearTimeout(timer);
   }
 
-  if (message?.stop_reason === 'refusal') {
+  if (!res.ok) {
+    const detail = await res.text().catch(() => '');
+    throw new ExtractionError(
+      EXTRACTION_ERROR_CODES.PROVIDER_FAILURE,
+      'The paystub reader could not be reached. Enter the paystub by hand instead -- manual entry produces exactly the same record.',
+      { cause: new Error(`${res.status} ${detail.slice(0, 400)}`) }
+    );
+  }
+
+  const message = await res.json().catch(() => null);
+  const candidate = message?.candidates?.[0];
+  const finish = candidate?.finishReason;
+
+  if (!candidate || finish === 'SAFETY' || finish === 'PROHIBITED_CONTENT' || finish === 'BLOCKLIST') {
     throw new ExtractionError(
       EXTRACTION_ERROR_CODES.PROVIDER_FAILURE,
       'The paystub reader declined to process that image. Enter the paystub by hand instead.'
     );
   }
-  if (message?.stop_reason === 'max_tokens') {
-    // A truncated structured response is a partial reading. Partial readings
-    // are exactly the thing that must never reach the review form.
+  if (finish === 'MAX_TOKENS') {
+    // A truncated structured response is a partial reading, and partial
+    // readings are exactly what must never reach the review form.
     throw new ExtractionError(
       EXTRACTION_ERROR_CODES.PROVIDER_FAILURE,
       'The paystub reader returned an incomplete result and it was discarded. Enter the paystub by hand instead.'
     );
   }
 
-  const body = textOf(message);
+  const body = (candidate.content?.parts ?? [])
+    .map((part) => (typeof part?.text === 'string' ? part.text : ''))
+    .join('')
+    .trim();
+
   let parsedBody;
   try {
     parsedBody = JSON.parse(body);

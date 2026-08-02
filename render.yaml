@@ -29,7 +29,7 @@ services:
         fromDatabase:
           name: paytrack-db
           property: connectionString
-      - key: ANTHROPIC_API_KEY
+      - key: GEMINI_API_KEY
         sync: false # set in the dashboard; never in git
       - key: ALLOWED_ORIGINS
         sync: false # set to the paytrack-web URL once it exists
@@ -89,5 +89,5 @@ services:
   #       fromDatabase:
   #         name: paytrack-db
   #         property: connectionString
-  #     - key: ANTHROPIC_API_KEY
+  #     - key: GEMINI_API_KEY
   #       sync: false
