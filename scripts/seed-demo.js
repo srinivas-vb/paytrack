@@ -94,13 +94,74 @@ const stub = await call('POST', '/api/paystubs', {
 });
 console.log(`  paystub:   80h @ $${RATE} = $1600 (missing 2 of the nine s 226(a) elements)`);
 
+// ---------------------------------------------------------------------------
+// Second pay period: the one where the jurisdiction toggle changes the answer.
+//
+// Scenario one is honest but it makes a poor argument for supporting two
+// jurisdictions, because the two agree: 9h x 5 gives five overtime hours
+// whether you reach them daily (California) or weekly (federal), so the
+// discrepancy is $300 either way and the toggle moves nothing but flags.
+//
+// Four 10-hour days is the case that separates them. The week totals 40 hours,
+// so FEDERAL LAW SEES NO VIOLATION AT ALL -- 40 is the threshold and the worker
+// did not cross it. California counts overtime by the day, so each of those
+// days owes 2 hours at 1.5x.
+//
+//   logged   40h  (1 workweek x 4 days x 10h)
+//   federal $800  (40 straight x $20 -- nothing owed, paid in full)
+//   calif.  $880  (32 straight x $20 + 8 daily OT x $30)
+//   paid    $800
+//   short     $0 federal / $80 California
+//
+// This is the strongest single beat available: same worker, same hours, same
+// employer, one toggle, and a violation appears out of nothing. It is also the
+// honest one -- it is exactly why "which state" is a question the app has to
+// ask rather than a setting it can guess.
+// ---------------------------------------------------------------------------
+const COMPRESSED = ['2026-07-20', '2026-07-21', '2026-07-22', '2026-07-23'];
+for (const date of COMPRESSED) {
+  await call('POST', '/api/shifts/retroactive', { ...at(date, 8, 10), gps: WAREHOUSE });
+}
+
+const stub2 = await call('POST', '/api/paystubs', {
+  periodStart: '2026-07-19',
+  periodEnd: '2026-07-25',
+  paidHours: 40,
+  paidRate: RATE,
+  grossPay: 800,
+  // This employer filled the statement in correctly. The point of the scenario
+  // is the overtime rule, not paperwork -- and an app that finds a violation on
+  // every document it sees is an accusation generator, not evidence.
+  presentFields: [
+    'gross_wages',
+    'total_hours',
+    'deductions',
+    'net_wages',
+    'pay_period_dates',
+    'employee_name_and_id',
+    'employer_name_and_address',
+    'hourly_rates',
+    'piece_rate_units',
+  ],
+});
+console.log(`  shifts:    ${COMPRESSED.length} retroactive 10-hour days (one workweek, 40h total)`);
+console.log(`  paystub:   40h @ $${RATE} = $800 (all nine s 226(a) elements present)`);
+
 const ca = await call('GET', `/api/analysis?paystubId=${stub.paystub.id}&jurisdiction=california`);
 const fed = await call('GET', `/api/analysis?paystubId=${stub.paystub.id}&jurisdiction=federal`);
+const ca2 = await call('GET', `/api/analysis?paystubId=${stub2.paystub.id}&jurisdiction=california`);
+const fed2 = await call('GET', `/api/analysis?paystubId=${stub2.paystub.id}&jurisdiction=federal`);
 
 console.log(`
-  California  owed $${ca.totalOwed}  paid $${ca.totalPaid}  short $${ca.discrepancy}
-  Federal     owed $${fed.totalOwed}  paid $${fed.totalPaid}  short $${fed.discrepancy}
-  workweeks:  ${ca.workweeks.length}   premiums flagged: ${ca.potentialPremiums.length}   compliance flags: ${ca.complianceFlags.length}
+  Period 1 -- Jul 5-18, ten 9-hour days, employer paid 80h flat
+    California  owed $${ca.totalOwed}  paid $${ca.totalPaid}  short $${ca.discrepancy}
+    Federal     owed $${fed.totalOwed}  paid $${fed.totalPaid}  short $${fed.discrepancy}
+    workweeks:  ${ca.workweeks.length}   premiums flagged: ${ca.potentialPremiums.length}   compliance flags: ${ca.complianceFlags.length}
+
+  Period 2 -- Jul 19-25, four 10-hour days, employer paid all 40h
+    California  owed $${ca2.totalOwed}  paid $${ca2.totalPaid}  short $${ca2.discrepancy}
+    Federal     owed $${fed2.totalOwed}  paid $${fed2.totalPaid}  short $${fed2.discrepancy}
+    ^ the toggle demo: federal sees nothing, California finds $${ca2.discrepancy}
 
 To see this in the browser, open the console at http://localhost:5173 and run:
 
