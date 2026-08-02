@@ -75,7 +75,7 @@ internally.
 2. Dashboard → **New → Blueprint** → select the repo. `render.yaml` provisions
    Postgres, the API, and the static site — all on free plans.
 3. Set the values Render won't sync from git:
-   - `paytrack-api` → `ANTHROPIC_API_KEY`, `ALLOWED_ORIGINS` = the static site URL
+   - `paytrack-api` → `GEMINI_API_KEY`, `ALLOWED_ORIGINS` = the static site URL
    - `paytrack-web` → `VITE_API_URL` = the API URL
 
 ### Notarization on the free tier
@@ -103,8 +103,8 @@ uncommenting it in `render.yaml` is a one-line change once you're on a paid plan
 ```
 Static Site (Render) ── React + Vite
       ↓ HTTPS · image downscaled ~1568px client-side
-Web Service (Render) ── Express · ANTHROPIC_API_KEY lives here ONLY
-      ├→ Anthropic vision API → structured paystub JSON
+Web Service (Render) ── Express · GEMINI_API_KEY lives here ONLY
+      ├→ Gemini vision API → structured paystub JSON
       ├→ rule engine → per-workweek discrepancy
       └→ Postgres (Render) ── append-only ledger, refuses its own UPDATEs
 Background Worker (Render) ──→ backfill queue        (Phase 4)
