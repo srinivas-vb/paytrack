@@ -100,20 +100,49 @@ uncommenting it in `render.yaml` is a one-line change once you're on a paid plan
 
 ## Architecture
 
+Everything below runs on Render's **free** tier — two services and one managed
+database. Nothing here is aspirational; this is what is deployed.
+
 ```
-Static Site (Render) ── React + Vite
+Static Site (Render, free) ── React + Vite
       ↓ HTTPS · image downscaled ~1568px client-side
-Web Service (Render) ── Express · GEMINI_API_KEY lives here ONLY
-      ├→ Gemini vision API → structured paystub JSON
-      ├→ rule engine → per-workweek discrepancy
-      └→ Postgres (Render) ── append-only ledger, refuses its own UPDATEs
-Background Worker (Render) ──→ backfill queue        (Phase 4)
-Cron Job (Render) ───────────→ nightly notarization
+Web Service (Render, free) ── Express · GEMINI_API_KEY lives here ONLY
+      ├→ Gemini vision  → structured paystub JSON   (gemini-flash-latest)
+      ├→ Gemini text    → plain-language explainer  (gemini-flash-lite-latest)
+      ├→ rule engine    → per-workweek discrepancy
+      └→ Postgres (Render, free) ── append-only ledger, refuses its own UPDATEs
+             ↑
+             └─ notarize-on-write, throttled 1/worker/hour
+                (stands in for the cron job — see below)
 ```
 
-Four services, each with a reason it can't be swapped out. The vision LLM is
-what makes the Web Service structurally necessary — it is the only place the
-API key can ever live.
+**Three resources, each with a reason it can't be swapped out.** The vision LLM
+is what makes the Web Service structurally necessary — it is the only place the
+API key can ever live. Postgres is not storage here but an evidence ledger: a
+trigger makes it refuse UPDATE and DELETE from the application's own
+credentials.
+
+The two LLM calls deliberately use **different models**. Gemini's free tier
+meters requests per model rather than per key, so sharing one would let
+rehearsing the explainer exhaust the quota that paystub extraction depends on —
+and extraction is the feature with no fallback.
+
+### What is *not* running, and why
+
+`render.yaml` also contains a **cron job** and a **background worker**, both
+commented out. Both require a paid plan, so neither is deployed:
+
+| Service | Purpose | Status |
+|---|---|---|
+| `paytrack-notarize` (cron) | nightly chain notarization, 08:00 UTC | commented out — paid plan |
+| `paytrack-worker` | backfill queue for bulk paystub extraction | commented out — paid plan, and the queue itself is unbuilt |
+
+The cron is replaced by **notarize-on-write** (`server/src/notarize.js`). The
+honest difference: the cron proves chain state at a fixed time regardless of
+whether the worker did anything; notarize-on-write only records state when the
+worker acts. Both timestamps are server-issued and neither is forgeable by the
+worker's device, so this is a weaker guarantee rather than a fig leaf.
+Uncommenting the cron is a one-line change on a paid plan.
 
 ## Layout
 
@@ -121,7 +150,8 @@ API key can ever live.
 db/schema.sql              tables + append-only trigger
 server/src/index.js        Express app, CORS, health probes
 server/src/db.js           pg pool, SSL handling for Render
-server/src/jobs/notarize.js  nightly cron: latest hash per worker
+server/src/notarize.js     notarize-on-write fallback, throttled 1/worker/hour
+server/src/jobs/notarize.js  the cron entrypoint (not deployed — paid plan)
 scripts/db-init.js         apply schema
 scripts/verify-append-only.js  prove the ledger rejects edits
 web/                       Vite + React
