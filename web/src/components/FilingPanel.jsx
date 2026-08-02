@@ -288,8 +288,14 @@ function Deadlines({ windows, soonest, info }) {
   const anyKnown = windows.some((w) => w.known)
 
   return (
-    <section className="card">
-      <h2>How long you have</h2>
+    /* Collapsed. The deadline that matters is already surfaced expanded in
+       "Where to take this" — this card is the full per-claim breakdown, which
+       is worth having and is not worth 769px of scroll on the way to the
+       retaliation protections below it. */
+    <details className="card">
+      <summary className="addstub-summary">
+        <h2>How long you have</h2>
+      </summary>
 
       <p className="filing-lead">
         {soonest
@@ -325,7 +331,7 @@ function Deadlines({ windows, soonest, info }) {
       ) : null}
 
       <p className="hint">{info.otherClaimsNote}</p>
-    </section>
+    </details>
   )
 }
 
@@ -368,8 +374,13 @@ function Deadline({ window: w }) {
 
 function GetHelp({ info, primary }) {
   return (
-    <section className="card">
-      <h2>Get someone on your side</h2>
+    /* Collapsed for the same reason as the deadlines: worth having, not worth
+       reading past. It is last on the page, so a worker who wants it opens it
+       without having scrolled through it to reach anything else. */
+    <details className="card">
+      <summary className="addstub-summary">
+        <h2>Get someone on your side</h2>
+      </summary>
 
       <p>
         You can file on your own, and many people do. You will still be better
@@ -395,6 +406,6 @@ function GetHelp({ info, primary }) {
       </ul>
 
       <p className="filing-warning">{info.notLegalAdvice}</p>
-    </section>
+    </details>
   )
 }

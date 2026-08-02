@@ -849,10 +849,64 @@ code {
   cursor: pointer;
 }
 
-.segment[aria-pressed='true'] {
+/* Both attributes, one rule. The jurisdiction switch is a filter and says
+   aria-pressed; the Pay sub-tabs swap panels and say aria-selected. They look
+   identical on purpose -- same control, and a worker should not have to learn
+   two -- but they mean different things to a screen reader. */
+.segment[aria-pressed='true'],
+.segment[aria-selected='true'] {
   color: var(--accent-fg);
   background: var(--accent);
   border-color: transparent;
+}
+
+/* The Pay tab's two halves. Sits between the paystub picker and the panel it
+   switches, so it needs the card's rhythm above it and a smaller gap below --
+   it belongs to what follows, not to what precedes it. */
+.payviews {
+  margin-top: 22px;
+}
+
+/* Adding a paystub is 700px of form that most visits do not need, so it is
+   collapsed. It keeps the card surface -- it is still a place you go, not an
+   aside -- and only the heading carries the disclosure. */
+.addstub-summary {
+  cursor: pointer;
+  list-style: none;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+}
+
+.addstub-summary::-webkit-details-marker {
+  display: none;
+}
+
+.addstub-summary h2 {
+  margin: 0;
+}
+
+/* The affordance, since the native marker is hidden. Rotates when open. */
+.addstub-summary::after {
+  content: '+';
+  margin-left: auto;
+  padding-left: 16px;
+  font-size: 22px;
+  line-height: 1;
+  color: var(--accent);
+}
+
+.addstub[open] > .addstub-summary {
+  margin-bottom: 16px;
+}
+
+.addstub[open] > .addstub-summary::after {
+  content: '\2212'; /* minus */
+}
+
+.addstub-summary:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
 }
 
 /* ---- the headline figure ------------------------------------------ */
@@ -1043,6 +1097,52 @@ code {
   font-size: 16px;
 }
 
+/* Collapsed by default. These three ran to 716px stacked under the figures --
+   a caveat a worker has to scroll past every visit stops being read, which is
+   the opposite of what a caveat is for. The heading still states the point in
+   full while closed ("not included in the amount above", "what is not counted
+   here"), so nothing load-bearing is hidden behind the click.
+
+   Still flat, still dashed. The disclosure marker is the only thing added --
+   no lift, no solid border, nothing that would let these read as money owed. */
+.aside-summary {
+  cursor: pointer;
+  list-style: none;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.aside-summary::-webkit-details-marker {
+  display: none;
+}
+
+.aside-summary h3 {
+  margin: 0;
+}
+
+.aside-summary::after {
+  content: '+';
+  margin-left: auto;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--accent);
+}
+
+.aside[open] > .aside-summary::after {
+  content: '\2212'; /* minus */
+}
+
+.aside[open] > .aside-summary {
+  margin-bottom: 4px;
+}
+
+.aside-summary:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
 .aside p {
   margin: 8px 0 0;
   font-size: 15px;
@@ -1222,7 +1322,11 @@ footer {
 
   .shell {
     grid-area: main;
-    max-width: 720px;
+    /* The grid track already affords 868px: --frame 1180 less 64 of padding,
+       less the 208 rail, less the 40 column-gap. 720 was leaving 148px of it
+       unused, which bought nothing and cost roughly a screen of scrolling in
+       reflowed prose. */
+    max-width: 868px;
     margin: 0;
     padding: 0 0 96px;
   }

@@ -450,7 +450,7 @@ export const EXPLANATION_SCHEMA = {
     nextStep: {
       type: 'string',
       description:
-        'ONE sentence pointing the worker at the filing panel below this explanation. Not advice about whether to file -- just where to look next.',
+        'ONE sentence telling the worker that the "What to do next" tab has the filing steps, the deadlines and what protects them from retaliation. Name that tab exactly -- do NOT say "below" or "further down", because the filing panel is on a separate tab, not underneath this text. Not advice about whether to file -- just where to look next.',
     },
   },
 };

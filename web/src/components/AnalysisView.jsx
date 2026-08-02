@@ -326,8 +326,10 @@ function groupPremiums(premiums) {
 
 function PotentialPremiums({ premiums }) {
   return (
-    <section className="aside">
-      <h3>Possible break premiums — not included in the amount above</h3>
+    <details className="aside">
+      <summary className="aside-summary">
+        <h3>Possible break premiums — not included in the amount above</h3>
+      </summary>
       <p>
         PayTrack sees when you clocked in and out. It cannot see whether you
         actually took a break. These are flags to check, not money you are owed,
@@ -367,7 +369,7 @@ function PotentialPremiums({ premiums }) {
           ))}
         </ul>
       )}
-    </section>
+    </details>
   )
 }
 
@@ -380,8 +382,10 @@ function PotentialPremiums({ premiums }) {
  */
 function ComplianceFlags({ flags }) {
   return (
-    <section className="aside">
-      <h3>What your pay statement has to show</h3>
+    <details className="aside">
+      <summary className="aside-summary">
+        <h3>What your pay statement has to show</h3>
+      </summary>
       <p>
         California law lists nine things every pay statement must include. A
         missing one is its own separate violation, apart from any unpaid wages.
@@ -413,7 +417,7 @@ function ComplianceFlags({ flags }) {
           })}
         </ul>
       )}
-    </section>
+    </details>
   )
 }
 
@@ -426,8 +430,10 @@ function ComplianceFlags({ flags }) {
  */
 function ScopeExclusions({ exclusions, rate }) {
   return (
-    <section className="aside">
-      <h3>What is not counted here</h3>
+    <details className="aside">
+      <summary className="aside-summary">
+        <h3>What is not counted here</h3>
+      </summary>
       <ul className="exclusion-list">
         {exclusions.map((item) => (
           <li key={item}>{item}</li>
@@ -442,6 +448,6 @@ function ScopeExclusions({ exclusions, rate }) {
       <p className="hint">
         This tool also assumes one employer and hourly, non-exempt work.
       </p>
-    </section>
+    </details>
   )
 }

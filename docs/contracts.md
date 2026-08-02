@@ -455,7 +455,7 @@ they cannot use. So:
     "headline": "One sentence: what the record shows for this pay period.",
     "why": ["Short paragraphs. Each explains ONE rule that applied, in plain words."],
     "whatThisIsNot": ["The limits: not legal advice, not a ruling, what it cannot see."],
-    "nextStep": "One sentence pointing at the filing panel below."
+    "nextStep": "One sentence naming the \"What to do next\" tab, which holds the filing steps. Never \"below\" -- filing is a separate tab, not further down the page."
   }
 }
 ```

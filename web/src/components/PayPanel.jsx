@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import * as api from '../api.js'
 import { formatCalendarDate, formatHours, formatMoney } from '../format.js'
 import AnalysisView from './AnalysisView.jsx'
@@ -17,6 +17,11 @@ import { EmptyBlock, ErrorBlock, LoadingBlock, Notice } from './Ui.jsx'
  * treated as the truth — the product is the gap between them, shown with its
  * workings.
  */
+const PAY_VIEWS = [
+  { id: 'result', label: 'Your result' },
+  { id: 'next', label: 'What to do next' },
+]
+
 export default function PayPanel({
   status,
   error,
@@ -38,11 +43,48 @@ export default function PayPanel({
   // silently leaving the first read on screen.
   const [extracted, setExtracted] = useState(null)
 
+  // Which half of the tab is showing: the result, or what to do about it.
+  //
+  // Stacked, these were 8,251px -- eleven screens, and roughly half of that was
+  // reference material (where to file, what protects you, how long you have)
+  // that a worker reads once, when they are ready to act, but had to scroll
+  // past on every single visit to see their own figures.
+  //
+  // The split is by PURPOSE, not by length: everything in 'result' answers
+  // "what am I owed", everything in 'next' answers "what do I do about it".
+  const [view, setView] = useState('result')
+  const viewsRef = useRef(null)
+
   // The selection is DERIVED, not synced. Falling back to list[0] (newest pay
   // period, since the API sorts that way) means a deleted or not-yet-chosen
   // stub resolves without an effect writing state back on every render — and
   // there is no window where the analysis below points at a row that is gone.
   const selected = list.find((p) => p.id === selectedId) ?? list[0] ?? null
+
+  // Changing paystub returns you to the result. Landing on "what to do next"
+  // for a pay period you have not looked at yet puts filing deadlines and
+  // retaliation law in front of someone who does not yet know whether they
+  // were underpaid at all.
+  //
+  // Keyed on the DERIVED id, not on `selectedId`. Deleting the shown stub
+  // moves `selected` to a different pay period while `selectedId` is unchanged
+  // or null, and that is exactly a case where the view must reset.
+  const shownId = selected?.id ?? null
+  useEffect(() => {
+    setView('result')
+  }, [shownId])
+
+  // Switching brings the top of the panel into view. Without this you tap
+  // "What to do next" while scrolled to the bottom of a long result and land
+  // in the middle of retaliation law with no idea what you are looking at.
+  //
+  // `smooth` is not used: the whole point is that the destination is already
+  // on screen by the time the finger lifts. Guarded on the ref because the
+  // panel does not exist until a paystub is selected.
+  function selectView(id) {
+    setView(id)
+    viewsRef.current?.scrollIntoView({ block: 'start' })
+  }
 
   async function handleDelete(id) {
     setRemovingId(id)
@@ -167,38 +209,78 @@ export default function PayPanel({
       </section>
 
       {selected ? (
-        <>
-          <AnalysisView
-            paystubId={selected.id}
-            jurisdiction={jurisdiction}
-            onJurisdiction={setJurisdiction}
-          />
+        <div ref={viewsRef}>
+          {/*
+            Two halves of one question. Tab semantics rather than the
+            `aria-pressed` pair the jurisdiction switch uses: that one filters
+            what a figure means, this one swaps which panel you are reading,
+            and a screen reader should be told which.
+          */}
+          <div className="segmented payviews" role="tablist" aria-label="Pay sections">
+            {PAY_VIEWS.map((v) => (
+              <button
+                key={v.id}
+                type="button"
+                role="tab"
+                id={`payview-${v.id}`}
+                aria-selected={view === v.id}
+                aria-controls={`paypanel-${v.id}`}
+                className="segment"
+                onClick={() => selectView(v.id)}
+              >
+                {v.label}
+              </button>
+            ))}
+          </div>
 
-          {/* Directly under the figures it describes, and nowhere else. The
-              explanation is a paraphrase of the analysis above, so it has to
-              be read after it — and it is optional, so everything below here
-              works identically when it is switched off or fails. */}
-          <ExplainPanel paystubId={selected.id} jurisdiction={jurisdiction} />
+          <div
+            role="tabpanel"
+            id={`paypanel-${view}`}
+            aria-labelledby={`payview-${view}`}
+            tabIndex={-1}
+          >
+            {view === 'result' ? (
+              <>
+                <AnalysisView
+                  paystubId={selected.id}
+                  jurisdiction={jurisdiction}
+                  onJurisdiction={setJurisdiction}
+                />
 
-          {/* The packet is what a worker actually hands to someone. It comes
-              straight after the analysis it is built from, so the figures on
-              screen and the figures in the file are visibly the same ones. */}
-          <ReportPanel paystubId={selected.id} jurisdiction={jurisdiction} />
+                {/* Directly under the figures it describes, and nowhere else.
+                    The explanation is a paraphrase of the analysis above, so it
+                    has to be read after it — and it is optional, so everything
+                    below here works identically when it is switched off. */}
+                <ExplainPanel paystubId={selected.id} jurisdiction={jurisdiction} />
 
-          {/* A PDF alone leaves the worker stuck. Fear of retaliation, not
-              lack of evidence, is the main reason people do not file — so the
-              next step and the protection come together, not on some other
-              screen the worker has to go looking for. */}
-          <FilingPanel
-            jurisdiction={jurisdiction}
-            periodStart={selected.periodStart}
-            periodEnd={selected.periodEnd}
-          />
-        </>
+                {/* The packet is what a worker actually hands to someone. It
+                    stays with the figures it is built from, so what is on
+                    screen and what is in the file are visibly the same. */}
+                <ReportPanel paystubId={selected.id} jurisdiction={jurisdiction} />
+              </>
+            ) : (
+              /* A PDF alone leaves the worker stuck. Fear of retaliation, not
+                 lack of evidence, is the main reason people do not file — so
+                 the filing route and the protection stay together here, one
+                 tap from the result rather than four screens below it. */
+              <FilingPanel
+                jurisdiction={jurisdiction}
+                periodStart={selected.periodStart}
+                periodEnd={selected.periodEnd}
+              />
+            )}
+          </div>
+        </div>
       ) : null}
 
-      <section className="card">
-        <h2>Add a paystub</h2>
+      {/* Outside the two views on purpose. Adding a paystub is not a step in
+          reading your result and it is not a next step either — it is how you
+          get more of both, so it stays reachable from either view. Closed by
+          default: it is 700px of form that most visits do not need. */}
+      <details className="card addstub">
+        <summary className="addstub-summary">
+          <h2>Add a paystub</h2>
+        </summary>
         <p className="hint">
           Copy the numbers exactly as they are printed. PayTrack never guesses a
           figure on your behalf — a number this app invented would be worth
@@ -219,7 +301,7 @@ export default function PayPanel({
             onChanged()
           }}
         />
-      </section>
+      </details>
     </>
   )
 }
