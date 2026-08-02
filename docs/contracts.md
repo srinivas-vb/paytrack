@@ -416,3 +416,68 @@ they are never saved directly. Low-confidence fields must be visually marked.
 This is a record someone may rely on in a legal proceeding — a
 silently-wrong OCR read that nobody was asked to confirm is the worst outcome
 this product can produce.
+
+---
+
+# Phase 7 contract — the explainer
+
+The rule engine already says *what* is owed. This says *why*, in language a
+worker can read out loud to a labor commissioner.
+
+## The constraint everything else follows from
+
+**The model never produces a number.** It receives the analysis and explains
+it. Every figure shown to the worker comes from `lib/analysis.js`, which is the
+same code that produced the figures already on screen.
+
+An explainer that derives its own arithmetic can disagree with the page above
+it, and a worker holding two different amounts for one pay period has a record
+they cannot use. So:
+
+- the prompt forbids restating, recomputing, or rounding any figure
+- the response is **validated**: any number token in the output that does not
+  appear in the analysis is a rejection, not a warning
+- on rejection the endpoint returns the failure and the UI keeps the analysis
+  it already has. No explanation is strictly better than a wrong one.
+
+## `POST /api/explain`
+
+```jsonc
+{ "paystubId": 12, "jurisdiction": "california" }
+```
+
+→ `200`
+```jsonc
+{
+  "source": "llm",
+  "model": "gemini-flash-latest",
+  "explanation": {
+    "headline": "One sentence: what the record shows for this pay period.",
+    "why": ["Short paragraphs. Each explains ONE rule that applied, in plain words."],
+    "whatThisIsNot": ["The limits: not legal advice, not a ruling, what it cannot see."],
+    "nextStep": "One sentence pointing at the filing panel below."
+  }
+}
+```
+
+- `503 { "error": ..., "fallback": "analysis" }` when unconfigured — same shape
+  as `/api/extract`, and the UI treats it the same way: the analysis is already
+  on screen and remains fully usable.
+- `502 { "error": ..., "fallback": "analysis" }` on provider failure or on a
+  rejected response.
+
+## Non-negotiables
+
+1. **No invented figures.** Validate; reject on mismatch.
+2. **Zero and negative discrepancies get a real explanation**, not an apology
+   and not an empty state. "Your employer appears to have paid this period
+   correctly" is a genuine, useful result.
+3. **Potential premiums are never described as owed.** If the model calls them
+   money the worker is owed, that is a rejection.
+4. **No legal advice.** It explains what the record shows. It does not tell
+   anyone whether to sue, predict an outcome, or estimate what they will win.
+5. **Scope exclusions get stated**: if tips or bonuses apply, every figure is
+   too LOW, and the explanation must say so rather than imply the number is
+   complete.
+6. The explanation is an **addition** to the analysis, never a replacement.
+   It renders below the figures, and the figures stand without it.
