@@ -9,6 +9,7 @@ import workplacesRouter from './routes/workplaces.js';
 import paystubsRouter from './routes/paystubs.js';
 import analysisRouter from './routes/analysis.js';
 import extractRouter from './routes/extract.js';
+import explainRouter from './routes/explain.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -81,6 +82,7 @@ app.use('/api/workplaces', workplacesRouter);
 app.use('/api/paystubs', paystubsRouter);
 app.use('/api/analysis', analysisRouter);
 app.use('/api/extract', extractRouter);
+app.use('/api/explain', explainRouter);
 
 app.use((_req, res) => res.status(404).json({ error: 'not found' }));
 

@@ -1,0 +1,227 @@
+/*
+ * The plain-words explainer.
+ *
+ * Only custom properties already declared in App.css are used, and the depth
+ * hierarchy set out there is followed rather than extended:
+ *
+ *   controls   2px offset  (the button, from .btn)
+ *   surfaces   4px         (this panel, from .card)
+ *   the figure 6px         (the headline amount -- ABOVE this panel, and
+ *                           nothing here may compete with it)
+ *
+ * So the model's prose is FLAT and dashed. That is the same treatment the
+ * `.aside` blocks get, and for the same reason: dashed means attached but
+ * separate, not part of the claim. Prose that a machine wrote must never
+ * acquire the physical presence of a figure the rule engine computed.
+ *
+ * Light only. Mobile-first, written for a 360px screen; tap targets stay at
+ * the 48px the rest of the app uses. No uppercase anywhere -- labels set
+ * lower-case in mono at weight 400, like every other label in this app.
+ */
+
+.explain-intro {
+  margin: 0 0 4px;
+}
+
+.explain-note {
+  margin: 14px 0 0;
+  font-size: 14px;
+  color: var(--dim);
+}
+
+.explain-waiting {
+  margin-top: 14px;
+}
+
+/* ---- the boundary --------------------------------------------------- */
+
+/*
+ * The frame. PayTrack's voice runs from `.explain-mark` down to
+ * `.explain-foot`; the model's words are confined to `.explain-prose` in the
+ * middle, and nothing crosses. The frame says which is which twice -- once
+ * before the box, once after -- because a worker should never have to guess
+ * whether a sentence is the record or a description of it.
+ */
+.explain-block {
+  margin-top: 4px;
+}
+
+.explain-mark {
+  margin-top: 0;
+}
+
+.explain-mark-label {
+  margin: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12.5px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--dim);
+}
+
+.explain-mark-body {
+  margin: 4px 0 0;
+  font-size: 14px;
+}
+
+/*
+ * The model's words, and nothing else. Dashed edge, no lift, sitting in the
+ * wash rather than on white -- it reads as pinned to the page rather than
+ * printed on it.
+ */
+.explain-prose {
+  margin-top: 10px;
+  padding: 16px;
+  background: var(--bg);
+  border: 1px dashed var(--edge);
+  border-radius: var(--r);
+}
+
+.explain-headline {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.explain-head {
+  margin: 20px 0 0;
+  font-size: 15px;
+}
+
+/* ---- why: reasons ---------------------------------------------------- */
+
+/*
+ * Numbered, with the violet rule this app already uses for statutory
+ * reasoning (see `.reasons` in App.css). Markers sit inside the box so the
+ * rule stays flush with the left edge of the block.
+ */
+.explain-reasons {
+  list-style: decimal inside;
+  margin: 10px 0 0;
+  padding: 0;
+}
+
+.explain-reasons li {
+  margin-top: 10px;
+  padding: 2px 0 2px 12px;
+  font-size: 15px;
+  border-left: 3px solid var(--accent);
+}
+
+.explain-reasons li::marker {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--dim);
+}
+
+/* ---- whatThisIsNot: limits ------------------------------------------ */
+
+/*
+ * A limit is not a reason, and this is the block that has to make that
+ * unmissable at a glance on a small screen. It differs from the reasons above
+ * in four independent ways -- its own bordered surface, its own colour, a dash
+ * marker instead of a number, and no violet rule -- so the distinction
+ * survives colour-blindness, a cracked screen, and skim-reading.
+ *
+ * The tint is the same one App.css already uses for `.caveat`, which carries
+ * exactly this meaning elsewhere in the app: this does not mean what you might
+ * take it to mean.
+ */
+.explain-limits {
+  margin-top: 20px;
+  padding: 14px;
+  background: var(--warn-bg);
+  border: 1px solid var(--warn);
+  border-radius: var(--r);
+  color: var(--warn);
+}
+
+.explain-limits-head {
+  margin: 0;
+  font-size: 15px;
+  color: var(--warn);
+}
+
+.explain-limit-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  font-size: 15px;
+}
+
+.explain-limit-list li {
+  position: relative;
+  margin-top: 8px;
+  padding-left: 20px;
+}
+
+.explain-limit-list li::before {
+  content: '—';
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+/* ---- nextStep -------------------------------------------------------- */
+
+.explain-next {
+  margin-top: 20px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.explain-next-label {
+  margin: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12.5px;
+  font-weight: 400;
+  text-transform: none;
+  color: var(--dim);
+}
+
+.explain-next-body {
+  margin: 4px 0 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+/* PayTrack's voice again, closing the frame. */
+.explain-foot {
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: var(--dim);
+}
+
+/* ---- refusals -------------------------------------------------------- */
+
+/*
+ * Neutral on purpose. The commonest route here is a 503 meaning the explainer
+ * is not configured, and nothing has gone wrong in that case: the analysis
+ * above is complete. Red would be a lie about the situation.
+ */
+.explain-route {
+  margin-top: 16px;
+  padding: 14px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--r);
+}
+
+.explain-route-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.explain-route-body {
+  margin: 6px 0 0;
+  font-size: 15px;
+}
+
+@media (min-width: 600px) {
+  .explain-prose {
+    padding: 18px;
+  }
+}

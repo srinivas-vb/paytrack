@@ -2,6 +2,7 @@ import { useState } from 'react'
 import * as api from '../api.js'
 import { formatCalendarDate, formatHours, formatMoney } from '../format.js'
 import AnalysisView from './AnalysisView.jsx'
+import ExplainPanel from './ExplainPanel.jsx'
 import PaystubForm from './PaystubForm.jsx'
 import PaystubPhoto from './PaystubPhoto.jsx'
 import ReportPanel from './ReportPanel.jsx'
@@ -172,6 +173,12 @@ export default function PayPanel({
             jurisdiction={jurisdiction}
             onJurisdiction={setJurisdiction}
           />
+
+          {/* Directly under the figures it describes, and nowhere else. The
+              explanation is a paraphrase of the analysis above, so it has to
+              be read after it — and it is optional, so everything below here
+              works identically when it is switched off or fails. */}
+          <ExplainPanel paystubId={selected.id} jurisdiction={jurisdiction} />
 
           {/* The packet is what a worker actually hands to someone. It comes
               straight after the analysis it is built from, so the figures on
